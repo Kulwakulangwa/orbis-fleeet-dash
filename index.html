@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Orbis Fleet Status</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1d1d1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Orbis Fleet">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
 /* Layout: one-screen TV board (summary band + 3x2 stage cards); admin view = phone-first stepper list with glass menu */
 :root{
@@ -235,6 +243,22 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 @media (max-width:700px){.uform{grid-template-columns:1fr}}
 .chk{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--fg);padding:10px 0}
 .btn.sm{font-size:14px;padding:9px 16px}
+.rtabs{display:inline-flex;gap:4px;padding:4px;border-radius:980px;background:var(--track);align-self:flex-start}
+.rtabs button{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:980px;padding:8px 16px;background:transparent;color:var(--mute);cursor:pointer}
+.rtabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.bar2 input[type=date]{flex:0 0 auto}
+.bar2 label.rnote{display:flex;align-items:center;gap:6px}
+.rsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.rsum button{font:inherit;text-align:left;border:1px solid var(--card-line);background:var(--card-bg);color:var(--fg);border-radius:16px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.rsum button b{font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.rsum button span{font-size:12px;color:var(--mute)}
+.rsum button[aria-pressed="true"]{border-color:var(--fg)}
+.rsum button.zero{opacity:.45}
+.rnote{font-size:13px;color:var(--mute)}
+.tbl td.wrap{white-space:normal;min-width:180px;max-width:340px;font-size:13px}
+.rhead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
+.rhead b{font-size:22px;letter-spacing:-.02em}
+.rhead span{color:var(--mute);font-size:14px}
 </style>
 </head>
 <body>
@@ -259,6 +283,7 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 <nav class="mm" id="mm" aria-label="Menu">
   <button type="button" data-view="dash" aria-current="page">Dashboard</button>
   <button type="button" data-view="detail">Truck details</button>
+  <button type="button" data-view="reports">Reports</button>
   <button type="button" data-view="trucks" id="mtrucks" hidden>All trucks (edit)</button>
   <button type="button" data-view="users" id="musers" hidden>Users</button>
   <hr>
@@ -288,7 +313,7 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 <main class="page" id="detail" hidden>
   <h2>Truck details</h2>
   <div class="bar2">
-    <input id="dq" type="search" placeholder="Search plate, driver, place…" aria-label="Search trucks">
+    <input id="dq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
     <select id="dcl" aria-label="Client"></select>
     <select id="drt" aria-label="Route"></select>
     <span class="cnt" id="dcnt"></span>
@@ -299,13 +324,45 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 <main class="page" id="trucks" hidden>
   <h2>All trucks</h2>
   <div class="bar2">
-    <input id="tq" type="search" placeholder="Search plate, driver, place…" aria-label="Search trucks">
+    <input id="tq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
     <select id="tcl" aria-label="Client"></select>
     <select id="tst" aria-label="Status"></select>
     <button class="btn sm" id="tadd" type="button">Add truck</button>
     <span class="cnt" id="tcnt"></span>
   </div>
   <div class="tbl"><table><thead><tr><th>Truck</th><th>Client</th><th>Status</th><th>Location</th><th>Days</th><th>Trip</th><th>Route</th><th>Rate go / return</th><th>Driver</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</main>
+
+<main class="page" id="reports" hidden>
+  <h2>Reports</h2>
+  <div class="rtabs" role="tablist">
+    <button type="button" role="tab" id="rt_day" aria-selected="true">Status on a date</button>
+    <button type="button" role="tab" id="rt_one" aria-selected="false">One truck's history</button>
+  </div>
+  <section id="rday">
+    <div class="bar2">
+      <input id="rdate" type="date" aria-label="Date">
+      <input id="rq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
+      <select id="rcl" aria-label="Client"></select>
+      <select id="rrt" aria-label="Route"></select>
+      <button class="btn sm" id="rxl" type="button">Download Excel</button>
+      <span class="cnt" id="rcnt"></span>
+    </div>
+    <div class="rsum" id="rsum" style="margin-top:12px"></div>
+    <p class="rnote" id="rmiss"></p>
+    <div class="tbl"><table><thead><tr><th>Truck</th><th>Client</th><th>Status</th><th>Location</th><th>Days at stage</th><th>Trip</th><th>Route</th><th>Driver</th><th>Notes</th><th>Last update</th></tr></thead><tbody id="rbody"></tbody></table></div>
+  </section>
+  <section id="rone" hidden>
+    <div class="bar2">
+      <input id="hq" list="hplates" type="search" placeholder="Truck plate, e.g. T986ENL" aria-label="Truck plate">
+      <label class="rnote">From <input id="hfrom" type="date"></label>
+      <label class="rnote">To <input id="hto" type="date"></label>
+      <button class="btn sm" id="hxl" type="button">Download Excel</button>
+      <datalist id="hplates"></datalist>
+    </div>
+    <div class="rhead" id="hhead" style="margin-top:12px"></div>
+    <div class="tbl" style="margin-top:12px"><table><thead><tr><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Location</th><th>Trip</th><th>Driver</th><th>Notes</th><th>Updated by</th></tr></thead><tbody id="hbody"></tbody></table></div>
+  </section>
 </main>
 
 <main class="page" id="users" hidden>
@@ -500,7 +557,11 @@ function fillFilters(){
   var sv=$("tst").value,gs=[];STEPS.forEach(function(s){if(gs.indexOf(s.g)<0)gs.push(s.g)});
   $("tst").innerHTML=opt("","All statuses")+gs.map(function(g){return '<optgroup label="'+esc(g)+'">'+STEPS.filter(function(s){return s.g===g}).map(function(s){return opt(s.k,s.l,s.k===sv)}).join("")+'</optgroup>'}).join("");
 }
-function match(t,q){if(!q)return true;q=q.toLowerCase();return [t.plate,t.driver,t.location,t.trailer,t.mine,t.route,t.notes].join(" ").toLowerCase().indexOf(q)>=0}
+/* search: text in plate/driver/place…; a number also matches trip no.; "trip 3" or "#3" = trip only */
+function match(t,q){if(!q)return true;q=q.toLowerCase().trim();var m=q.match(/^(?:trip\s*(?:no\.?)?|#)\s*(\d+)$/);
+  if(m)return String(t.trip_no||1)===String(+m[1]);
+  if(/^\d+$/.test(q)&&String(t.trip_no||1)===String(+q))return true;
+  return [t.plate,t.driver,t.location,t.trailer,t.mine,t.route,t.notes].join(" ").toLowerCase().indexOf(q)>=0}
 function trRow(t){var d=daysOf(t),L=lim(t),late=L&&d>L,s=SO[t.step]||{};
   return '<button type="button" class="tr" data-p="'+esc(t.plate)+'"><span class="p">'+esc(t.plate)+'</span><span class="c">'+esc(cli(t))+(t.route?" · "+esc(t.route):"")+'</span><span class="d'+(late?" late":"")+'" title="days at this stage">'+d+'d</span><span class="s">'+esc(s.l||t.step)+(t.location?" — "+esc(t.location):"")+' · trip '+(t.trip_no||1)+'</span></button>'}
 function drawDetail(){
@@ -581,13 +642,13 @@ $("eform").onsubmit=async function(e){
     trip_no:Math.max(1,parseInt($("e_trip").value,10)||1),route:$("e_route").value.trim()||null,rate_go:num($("e_go").value),rate_return:num($("e_ret").value),
     trailer:$("e_trailer").value.trim().toUpperCase()||null,driver:$("e_driver").value.trim().toUpperCase()||null,notes:$("e_notes").value.trim()||null,
     updated_at:new Date().toISOString(),updated_by:myName};
-  var moved=!editing||editing.step!==row.step||editing.location!==row.location||editing.trip_no!==row.trip_no;
+  var moved=!editing||editing.step!==row.step||editing.location!==row.location||editing.trip_no!==row.trip_no||(editing.driver||null)!==row.driver||(editing.trailer||null)!==row.trailer||(editing.notes||null)!==row.notes;
   if(!editing||editing.step!==row.step)row.stage_since=new Date().toLocaleDateString("en-CA");
   var b=$("esave");b.disabled=true;b.textContent="Saving…";
   var r=editing?await sb.from("trucks").update(row).eq("plate",plate).select():await sb.from("trucks").insert(row).select();
   b.disabled=false;b.textContent="Save";
   if(r.error||!r.data||!r.data.length){toast("Couldn't save. You may not have edit access.");return}
-  if(moved)sb.from("truck_log").insert({plate:plate,step:row.step,location:row.location,trip_no:row.trip_no,changed_by:myName}).then(function(){});
+  if(moved)LOGS=null;if(moved)sb.from("truck_log").insert({plate:plate,step:row.step,location:row.location,trip_no:row.trip_no,driver:row.driver,trailer:row.trailer,notes:row.notes,changed_by:myName}).then(function(){});
   upsertLocal(r.data[0]);closeEdit();toast(plate+" saved");
 };
 function upsertLocal(t){var i=trucks.findIndex(function(x){return x.plate===t.plate});if(i>=0)trucks[i]=t;else trucks.push(t);fillFilters();rebuild()}
@@ -608,31 +669,117 @@ $("uform").onsubmit=async function(e){e.preventDefault();
   if(r.error||!r.data.length){toast("Couldn't add user");return}
   $("uform").reset();toast("User added");loadUsers()};
 
+/* ----- reports (history from truck_log) ----- */
+var LOGS=null,logsAt=0;
+var TZ="Africa/Dar_es_Salaam";
+function dkey(ts){return new Date(ts).toLocaleDateString("en-CA",{timeZone:TZ})}
+function todayKey(){return dkey(Date.now())}
+function fmtD(k){if(!k)return "";var p=k.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function dayDiff(a,b){return Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/864e5)}
+async function loadLogs(force){
+  if(LOGS&&!force&&Date.now()-logsAt<60000)return LOGS;
+  var all=[],from=0;
+  while(true){var r=await sb.from("truck_log").select("plate,step,location,trip_no,driver,trailer,notes,changed_at,changed_by").order("changed_at",{ascending:true}).range(from,from+999);
+    if(r.error){toast("Couldn't load history");return LOGS||[]}
+    all=all.concat(r.data||[]);if(!r.data||r.data.length<1000)break;from+=1000}
+  LOGS=all;logsAt=Date.now();return LOGS}
+/* stages of one plate: consecutive rows with the same step+trip merge into one stage */
+function stagesOf(rows){var out=[],drv=null;
+  rows.forEach(function(h){var k=dkey(h.changed_at),l=out[out.length-1];
+    if(!(l&&l.step===h.step&&l.trip_no===h.trip_no)){l={step:h.step,trip_no:h.trip_no,location:h.location,from:k,lastAt:h.changed_at,by:h.changed_by,drivers:drv?[drv]:[],trailer:h.trailer,notes:[],note:null};out.push(l)}
+    else{l.location=h.location||l.location;l.lastAt=h.changed_at;l.by=h.changed_by||l.by}
+    if(h.driver){if(l.drivers[l.drivers.length-1]!==h.driver)l.drivers.push(h.driver);drv=h.driver}
+    if(h.trailer)l.trailer=h.trailer;
+    l.note=h.notes||null;
+    if(h.notes&&!l.notes.some(function(n){return n.t===h.notes}))l.notes.push({d:k,t:h.notes})});
+  out.forEach(function(s,i){s.to=out[i+1]?out[i+1].from:null;s.driver=s.drivers[s.drivers.length-1]||"";s.drvTxt=s.drivers.join(" → ");s.noteTxt=s.notes.map(function(n){return fmtD(n.d)+": "+n.t}).join(" | ")});return out}
+function byPlate(logs,uptoKey){var m={};logs.forEach(function(h){if(uptoKey&&dkey(h.changed_at)>uptoKey)return;(m[h.plate]=m[h.plate]||[]).push(h)});return m}
+var rMetric="",rRows=[];
+function rTab(one){$("rt_day").setAttribute("aria-selected",!one);$("rt_one").setAttribute("aria-selected",one);$("rday").hidden=one;$("rone").hidden=!one;if(one)drawHist();else drawDay()}
+$("rt_day").onclick=function(){rTab(false)};$("rt_one").onclick=function(){rTab(true)};
+function fillRepFilters(){
+  var cl=["All clients"].concat(CLIENTS),v=$("rcl").value;$("rcl").innerHTML=cl.map(function(c,i){return opt(i?c:"",c,v===(i?c:""))}).join("");
+  var rt={};trucks.forEach(function(t){if(t.route)rt[t.route]=1});var rv=$("rrt").value;
+  $("rrt").innerHTML=opt("","All routes")+Object.keys(rt).sort().map(function(r){return opt(r,r,r===rv)}).join("");
+  $("hplates").innerHTML=trucks.map(function(t){return t.plate}).sort().map(function(p){return '<option value="'+esc(p)+'">'}).join("");
+  if(!$("rdate").value)$("rdate").value=todayKey();$("rdate").max=todayKey();}
+async function drawDay(){
+  if($("reports").hidden||$("rday").hidden)return;
+  var D=$("rdate").value||todayKey();var logs=await loadLogs();
+  var bp=byPlate(logs,D),T={};trucks.forEach(function(t){T[t.plate]=t});
+  rRows=Object.keys(bp).map(function(p){var st=stagesOf(bp[p]),s=st[st.length-1],t=T[p]||{plate:p};
+    return {plate:p,client:cli(t),route:t.route||"",driver:s.driver,drvTxt:s.drvTxt,trailer:s.trailer||"",mine:t.mine,notes:s.note||"",step:s.step,location:s.location,trip_no:s.trip_no,days:dayDiff(s.from,D)+1,since:s.from,last:dkey(s.lastAt),by:s.by}});
+  var c=$("rcl").value,r=$("rrt").value,q=$("rq").value.trim();
+  var base=rRows.filter(function(x){return (!c||x.client===c)&&(!r||x.route===r)&&match(x,q)});
+  var cnt={};METRICS.forEach(function(m){cnt[m.key]=0});base.forEach(function(x){var s=SO[x.step];if(s)cnt[s.m]++});
+  $("rsum").innerHTML=METRICS.map(function(m){return '<button type="button" data-m="'+m.key+'" aria-pressed="'+(rMetric===m.key)+'" class="'+(cnt[m.key]?"":"zero")+'"><b>'+cnt[m.key]+'</b><span>'+esc(m.short)+'</span></button>'}).join("");
+  var list=base.filter(function(x){return !rMetric||(SO[x.step]||{}).m===rMetric}).sort(function(a,b){return a.plate<b.plate?-1:1});
+  $("rcnt").textContent=list.length+" trucks on "+fmtD(D);
+  var miss=trucks.filter(function(t){return !bp[t.plate]}).length;
+  $("rmiss").textContent=miss?miss+" truck(s) have no record on or before this date (history starts 01/10/2026).":"";
+  $("rbody").innerHTML=list.map(function(x){var s=SO[x.step]||{},cls=s.st==="clearing"?"clearing":(s.st==="in transit"?"transit":"");
+    return '<tr class="row" data-p="'+esc(x.plate)+'"><td><b>'+esc(x.plate)+'</b></td><td>'+esc(x.client)+'</td><td><span class="tag '+cls+'">'+esc(s.l||x.step)+'</span></td><td>'+esc(x.location||"")+'</td><td>'+x.days+'</td><td>'+(x.trip_no||1)+'</td><td>'+esc(x.route)+'</td><td>'+esc(x.drvTxt||"")+'</td><td class="wrap">'+esc(x.notes)+'</td><td>'+fmtD(x.last)+'</td></tr>'}).join("")||'<tr><td colspan="10" class="rnote">No trucks</td></tr>';
+  rRows._list=list;rRows._D=D;
+}
+$("rsum").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;rMetric=rMetric===b.dataset.m?"":b.dataset.m;drawDay()});
+$("rbody").addEventListener("click",function(e){var r=e.target.closest("tr.row");if(!r)return;$("hq").value=r.dataset.p;rTab(true)});
+["rdate","rq","rcl","rrt"].forEach(function(id){$(id).addEventListener("input",drawDay)});
+var hStages=[];
+async function drawHist(){
+  if($("reports").hidden||$("rone").hidden)return;
+  var p=$("hq").value.trim().toUpperCase().replace(/\s+/g,"");
+  if(!p){$("hhead").innerHTML='<span>Type a truck plate to see its history.</span>';$("hbody").innerHTML="";hStages=[];return}
+  var logs=await loadLogs();var rows=logs.filter(function(h){return h.plate===p});
+  var t=trucks.find(function(x){return x.plate===p});
+  if(!rows.length){$("hhead").innerHTML='<b>'+esc(p)+'</b><span>No history found.</span>';$("hbody").innerHTML="";hStages=[];return}
+  var st=stagesOf(rows),T=todayKey(),f=$("hfrom").value,to=$("hto").value;
+  st.forEach(function(s){var end=s.to||T;s.days=Math.max(1,dayDiff(s.from,end)+(s.to?0:1))});
+  hStages=st.filter(function(s){return (!f||(s.to||T)>=f)&&(!to||s.from<=to)});
+  $("hhead").innerHTML='<b>'+esc(p)+'</b><span>'+esc(t?cli(t):"")+(t&&t.route?" · "+esc(t.route):"")+(t&&t.driver?" · "+esc(t.driver):"")+'</span><span>'+hStages.length+' stage(s)</span>';
+  $("hbody").innerHTML=hStages.slice().reverse().map(function(s){var S=SO[s.step]||{},cls=S.st==="clearing"?"clearing":(S.st==="in transit"?"transit":"");
+    return '<tr><td>'+fmtD(s.from)+'</td><td>'+(s.to?fmtD(s.to):"now")+'</td><td>'+s.days+'</td><td><span class="tag '+cls+'">'+esc(S.l||s.step)+'</span></td><td>'+esc(s.location||"")+'</td><td>'+(s.trip_no||1)+'</td><td>'+esc(s.drvTxt)+'</td><td class="wrap">'+esc(s.noteTxt)+'</td><td>'+esc(s.by||"")+'</td></tr>'}).join("")||'<tr><td colspan="9" class="rnote">Nothing in this date range</td></tr>';
+}
+["hq","hfrom","hto"].forEach(function(id){$(id).addEventListener("input",drawHist)});
+/* Excel download (SheetJS loaded on first use; falls back to CSV) */
+var xlsxP=null;
+function needXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);if(!xlsxP)xlsxP=new Promise(function(ok,no){var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";s.onload=function(){window.XLSX?ok(window.XLSX):no()};s.onerror=function(){xlsxP=null;no()};document.head.appendChild(s)});return xlsxP}
+async function saveSheet(name,sheet,rows){
+  try{var X=await needXLSX();var ws=X.utils.aoa_to_sheet(rows);ws["!cols"]=rows[0].map(function(_,i){return {wch:Math.min(40,Math.max.apply(null,rows.map(function(r){return String(r[i]==null?"":r[i]).length}))+2)}});
+    var wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,sheet);X.writeFile(wb,name+".xlsx")}
+  catch(e){var csv=rows.map(function(r){return r.map(function(v){v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(",")}).join("\n");
+    var a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv"}));a.download=name+".csv";a.click();toast("Saved as CSV")}}
+$("rxl").onclick=function(){var L=rRows._list||[],D=rRows._D||todayKey();if(!L.length){toast("Nothing to download");return}
+  var rows=[["Date","Truck","Client","Route","Status","Location","Days at stage","Since","Trip","Driver","Trailer","Notes","Last update"]].concat(L.map(function(x){return [fmtD(D),x.plate,x.client,x.route,(SO[x.step]||{}).l||x.step,x.location||"",x.days,fmtD(x.since),x.trip_no||1,x.drvTxt||"",x.trailer||"",x.notes||"",fmtD(x.last)]}));
+  saveSheet("Orbis Fleet Status "+fmtD(D).replace(/\//g,"-"),"Status "+fmtD(D).replace(/\//g,"-"),rows)};
+$("hxl").onclick=function(){if(!hStages.length){toast("Nothing to download");return}var p=$("hq").value.trim().toUpperCase();
+  var rows=[["Truck","From","To","Days","Status","Location","Trip","Driver","Trailer","Notes","Updated by"]].concat(hStages.map(function(s){return [p,fmtD(s.from),s.to?fmtD(s.to):"now",s.days,(SO[s.step]||{}).l||s.step,s.location||"",s.trip_no||1,s.drvTxt,s.trailer||"",s.noteTxt,s.by||""]}));
+  saveSheet(p+" history "+fmtD(todayKey()).replace(/\//g,"-"),"History",rows)};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",trucks:"All trucks",users:"Users"};
 function show(v){
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
-  ["dash","detail","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
+  ["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){["dash","detail","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
   if(!r.data.length&&!canWrite){$("state").classList.add("off");$("stxt").textContent="No access";return false}
-  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();return true;
+  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
 }
 async function start(session){
   me=session.user;myName=me.email;canWrite=false;
@@ -658,6 +805,7 @@ $("lform").onsubmit=async function(e){
 $("mout").onclick=async function(){setM(false);if(chan){sb.removeChannel(chan);chan=null}await sb.auth.signOut();me=null;trucks=[];rebuild();$("state").classList.add("off");$("stxt").textContent="Signed out";gate(true)};
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&me)pull()});
 setInterval(function(){if(me)pull()},120000);
+if("serviceWorker" in navigator&&location.protocol==="https:")window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
 (async function(){
   if(!window.supabase){$("stxt").textContent="Offline";$("src").textContent="Couldn't load. Check the internet connection.";return}
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
