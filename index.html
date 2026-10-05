@@ -421,10 +421,11 @@ var METRICS=[
  {key:"border_in",label:"Border · Inbound",place:"Coming to Dar",short:"Border in"},
  {key:"offload_dar",label:"Offloading",place:"Dar es Salaam",short:"Offloading · Dar"},
  {key:"offload_mine",label:"Offloading",place:"At the mines",short:"Offloading · Mines"},
- {key:"at_yard",label:"At the yard",place:"Orbis yard",short:"At the yard"}];
+ {key:"at_yard",label:"At the yard",place:"Orbis yard",short:"At the yard"},
+ {key:"maintenance",label:"Maintenance",place:"Under repair",short:"Maintenance"}];
 var CLIENTS=["Reload","AGL","Vinmart","Polytra","Others"];
 var CC=["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)"];
-var SC=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--s6)","var(--s7)","var(--s8)","var(--s9)","var(--s10)","var(--s10)"];
+var SC=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--s6)","var(--s7)","var(--s8)","var(--s9)","var(--s10)","var(--s9)","var(--s8)"];
 var ICONS={wait_load:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',wait_offload:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l-3 2"/>',border:'<path d="M4 21V4M4 5h12l-2 3.5L16 12H4"/><path d="M14 21h6M17 15v6"/>',offload_dar:'<path d="M12 4v10M7 9l5 5 5-5"/><path d="M4 18h16"/>',offload_mine:'<path d="M12 4v10M7 9l5 5 5-5"/><path d="M3 20l5-6 4 4 3-3 6 5"/>',load_dar:'<path d="M12 18V8M7 13l5-5 5 5"/><path d="M4 21h16"/>',load_mine:'<path d="M12 15V5M7 10l5-5 5 5"/><path d="M3 21l5-5 4 3 3-3 6 5"/>',in_transit:'<path d="M2 7h11v9H2zM13 10h4l4 3v3h-8"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',at_yard:'<path d="M3 21V9l9-5 9 5v12"/><path d="M7 21v-7h10v7M7 17h10"/>'};
 var $=function(id){return document.getElementById(id)};
 var data=blank(), edit=blank(), meta={}, cur=0, dirty=false, db=null, usr=null, canWrite=false, ref=null;
@@ -446,8 +447,9 @@ var SPLITS={
  LOAD:{id:"load",icon:ICONS.load_dar,lab:"Loading",tail:" trucks loading now",parts:[["load_dar","Dar es Salaam","Tanzania",PIN],["load_mine","At the mines","Zambia & DRC",PIN]]},
  TRANSIT:{id:"transit",icon:ICONS.in_transit,lab:"In transit",tail:" trucks on the road",parts:[["transit_out","Outbound","to Zambia & DRC",'<path d="M5 12h14M13 6l6 6-6 6"/>'],["transit_in","Inbound","to Dar es Salaam",'<path d="M19 12H5M11 6l-6 6 6 6"/>']]},
  BORDER:{id:"border",icon:ICONS.border,lab:"Border clearing",tail:" trucks at the borders",parts:[["border_out","Outbound","to Zambia & DRC",'<path d="M5 12h14M13 6l6 6-6 6"/>'],["border_in","Inbound","to Dar es Salaam",'<path d="M19 12H5M11 6l-6 6 6 6"/>']]},
+ YARD:{id:"yard",icon:ICONS.at_yard,lab:"Yard & maintenance",tail:" trucks parked or under repair",parts:[["at_yard","At the yard","Orbis yard",PIN],["maintenance","Maintenance","Under repair",'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>']]},
  OFFLOAD:{id:"offload",icon:ICONS.offload_dar,lab:"Offloading",tail:" trucks offloading now",parts:[["offload_mine","At the mines","Zambia & DRC",PIN],["offload_dar","Dar es Salaam","Tanzania",PIN]]}};
-var CARDS=[["WAITLOAD","c4"],["LOAD","c4"],["TRANSIT","c4"],["BORDER","c4"],["OFFLOAD","c4"],["at_yard","c4"]];
+var CARDS=[["WAITLOAD","c4"],["LOAD","c4"],["TRANSIT","c4"],["BORDER","c4"],["OFFLOAD","c4"],["YARD","c4"]];
 CARDS.forEach(function(cd,i){
   var k=cd[0],step=i+1,last=(i===2||i===CARDS.length-1);
   var c=document.createElement("article");c.style.animationDelay=(i*70)+"ms";
@@ -530,7 +532,7 @@ var STEPS=[
  {k:"in_tr_dar",l:"In transit to Dar es Salaam",g:"Coming to Dar",m:"transit_in",st:"in transit",loc:"On the way to Dar"},
  {k:"offload_dar",l:"Offloading · Dar",g:"Dar es Salaam",m:"offload_dar",st:"offloading",loc:"Dar es Salaam"},
  {k:"at_yard",l:"At the yard",g:"Other",m:"at_yard",st:"at yard",loc:"Orbis yard"},
- {k:"maintenance",l:"Maintenance",g:"Other",m:"at_yard",st:"maintenance"}];
+ {k:"maintenance",l:"Maintenance",g:"Other",m:"maintenance",st:"maintenance"}];
 var SO={};STEPS.forEach(function(s){SO[s.k]=s});
 var MINES=["Shituru","Tenke Fungurume","MJM","Likasi","Luisha","STL","KICO","Kolwezi","Metalcol","Brother Mining","Tengyuan","Other mine"];
 var LIMIT={border_out:3,border_in:3,transit_out:6,transit_in:6,wait_load_mine:14,load_mine:14,offload_mine:7,offload_dar:3,wait_load_dar:7,load_dar:5};
