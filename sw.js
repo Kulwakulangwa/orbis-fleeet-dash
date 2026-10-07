@@ -1,5 +1,5 @@
 /* Orbis Fleet – app shell cache. Live data (Supabase) is never cached. */
-const C = "orbis-fleet-v6";
+const C = "orbis-fleet-v7";
 const SHELL = ["./", "./index.html", "./logo-dark.png", "./logo-white.png", "./bg.jpg", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
