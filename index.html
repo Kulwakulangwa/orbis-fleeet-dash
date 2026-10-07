@@ -248,6 +248,24 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .rtabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .bar2 input[type=date]{flex:0 0 auto}
 .bar2 label.rnote{display:flex;align-items:center;gap:6px}
+/* target page */
+.tlead{max-width:900px;margin:6px 0 14px}
+.tgsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
+.tgsum button{font:inherit;text-align:left;border:1px solid var(--card-line);background:var(--card-bg);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);color:var(--fg);border-radius:20px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.tgsum button b{font-size:clamp(30px,3.2vw,44px);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tgsum button span{font-size:13px;color:var(--mute)}
+.tgsum button.main b{font-size:clamp(40px,4.4vw,60px)}
+.tgsum button.bad b{color:var(--err)}
+.tgsum button[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 1px var(--fg)}
+.tghd{margin:16px 0 8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.tgh3{margin:28px 0 4px;font-size:22px;letter-spacing:-.02em}
+.tag.late{background:rgba(215,0,21,.16);color:var(--err)}
+.tag.ok{background:rgba(52,199,89,.2)}
+.tbl td.dl{font-weight:700;color:var(--err)}
+.tgin{width:70px;font:inherit;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.tgsave{margin-top:10px;display:flex;justify-content:flex-end}
+.diff.up{color:var(--err);font-weight:600}.diff.down{color:var(--ok);font-weight:600}
+#tgweek button{cursor:default}
 .rsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .rsum button{font:inherit;text-align:left;border:1px solid var(--card-line);background:var(--card-bg);color:var(--fg);border-radius:16px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
 .rsum button b{font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -309,6 +327,7 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
   <button type="button" data-view="dash" aria-current="page">Dashboard</button>
   <button type="button" data-view="detail">Truck details</button>
   <button type="button" data-view="reports">Reports</button>
+  <button type="button" data-view="target">Target</button>
   <button type="button" data-view="trucks" id="mtrucks" hidden>All trucks (edit)</button>
   <button type="button" data-view="users" id="musers" hidden>Users</button>
   <hr>
@@ -388,6 +407,27 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
     <div class="rhead" id="hhead" style="margin-top:12px"></div>
     <div class="tbl" style="margin-top:12px"><table><thead><tr><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Location</th><th>Trip</th><th>Driver</th><th>Notes</th><th>Updated by</th></tr></thead><tbody id="hbody"></tbody></table></div>
   </section>
+</main>
+
+<main class="page" id="target" hidden>
+  <h2>Target</h2>
+  <p class="lead tlead">Trucks on the return trip, from transit to Kasumbalesa or Sakania until they reach the yard. The expected yard date moves later when a truck stays in a status longer than its standard days. Trucks expected at the yard from the 25th count for next month&rsquo;s target.</p>
+  <div class="bar2">
+    <select id="tgm" aria-label="Target month"></select>
+    <input id="tgq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
+    <select id="tgc" aria-label="Client"></select>
+    <button class="btn sm" id="tgxl" type="button">Download Excel</button>
+    <span class="cnt" id="tgcnt"></span>
+  </div>
+  <div class="tgsum" id="tgsum"></div>
+  <div class="tghd">Target by week</div><div class="rsum" id="tgweek"></div>
+  <div class="tghd">Target by client</div><div class="rsum" id="tgcli"></div>
+  <div class="tbl" style="margin-top:14px"><table><thead><tr><th>Truck</th><th>Client</th><th>Status</th><th>Location</th><th>Days in status</th><th>Standard</th><th>Days to yard</th><th>Expected at yard</th><th>Target</th><th>Driver</th></tr></thead><tbody id="tgbody"></tbody></table></div>
+  <p class="rnote" id="tgnote"></p>
+  <h3 class="tgh3">Time per status</h3>
+  <p class="rnote">Standard days drive the projection. Real average comes from finished stages in the status history (history starts 01/10/2026), so it gets more accurate every week.</p>
+  <div class="tbl"><table><thead><tr><th>Status</th><th>Standard days</th><th>Real average</th><th>Stages counted</th><th>Difference</th></tr></thead><tbody id="tgstd"></tbody></table></div>
+  <div class="tgsave"><button class="btn sm" id="tgsave" type="button" hidden>Save standard days</button></div>
 </main>
 
 <main class="page" id="users" hidden>
@@ -835,32 +875,97 @@ $("pop").addEventListener("click",function(e){if(e.target===$("pop"))closePop()}
 ["pointerdown","keydown","input","wheel"].forEach(function(ev){$("pop").addEventListener(ev,popIdle,{passive:true})});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("pop").hidden&&$("sheet").hidden)closePop()},true);
 
+/* ----- target (return-trip projection to the yard) ----- */
+var TG_PATH={kas:["in_tr_kasumbalesa","in_kasumbalesa","in_tr_nakonde","in_nakonde","in_tunduma","in_tr_dar","offload_dar"],
+             sak:["in_tr_sakania","in_sakania","in_tr_nakonde","in_nakonde","in_tunduma","in_tr_dar","offload_dar"]};
+var TG_DEF={in_tr_kasumbalesa:3,in_tr_sakania:3,in_kasumbalesa:5,in_sakania:5,in_tr_nakonde:3,in_nakonde:3,in_tunduma:2,in_tr_dar:3,offload_dar:3};
+var TG_STD=null,tgWin="in",tgRows=[];
+function addD(k,n){var d=new Date(k+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function tgPath(step){var p=TG_PATH.kas.indexOf(step)>=0?TG_PATH.kas:(TG_PATH.sak.indexOf(step)>=0?TG_PATH.sak:null);return p?p.slice(p.indexOf(step)):null}
+async function loadStd(force){if(TG_STD&&!force)return TG_STD;var m={};Object.keys(TG_DEF).forEach(function(k){m[k]=TG_DEF[k]});
+  var r=await sb.from("target_days").select("step,days");if(!r.error&&r.data)r.data.forEach(function(x){m[x.step]=+x.days});TG_STD=m;return m}
+function monthKey(y,m){return y+"-"+String(m).padStart(2,"0")}
+function tgWindow(mk){var y=+mk.slice(0,4),m=+mk.slice(5,7),py=m===1?y-1:y,pm=m===1?12:m-1;return {from:monthKey(py,pm)+"-25",to:mk+"-24"}}
+function mName(mk,yr){return new Date(mk+"-01T00:00:00Z").toLocaleDateString("en-GB",yr?{month:"long",year:"numeric",timeZone:"UTC"}:{month:"long",timeZone:"UTC"})}
+function fillTgMonths(){var sel=$("tgm"),v=sel.value,T=todayKey(),y=+T.slice(0,4),m=+T.slice(5,7),d=+T.slice(8,10),o=[];
+  var start=d>=25?1:0;for(var i=start;i<start+4;i++){var mm=m+i,yy=y+Math.floor((mm-1)/12);mm=(mm-1)%12+1;o.push(monthKey(yy,mm))}
+  var def=v&&o.indexOf(v)>=0?v:o[1];
+  sel.innerHTML=o.map(function(k){return opt(k,mName(k,1)+" target",k===def)}).join("")}
+/* one truck: days left in this status (at least 1 when over standard) + standard days of every later status to the yard */
+function tgCalc(t,S,T){var path=tgPath(t.step);if(!path)return null;
+  var since=t.stage_since||T,el=Math.max(0,dayDiff(since,T)),std=S[t.step]||0,late=el+1>std,left=late?1:Math.max(0,std-el);
+  var tot=left+path.slice(1).reduce(function(a,k){return a+(S[k]||0)},0);
+  return {plate:t.plate,client:cli(t),step:t.step,location:t.location||"",driver:t.driver||"",inDays:el+1,std:std,late:late,left:Math.ceil(tot),eta:addD(T,Math.ceil(tot)),t:t}}
+async function drawTarget(force){
+  if($("target").hidden)return;
+  fillTgMonths();var cv=$("tgc").value;$("tgc").innerHTML=opt("","All clients")+CLIENTS.map(function(c){return opt(c,c,c===cv)}).join("");
+  var S=await loadStd(force),T=todayKey(),mk=$("tgm").value,W=tgWindow(mk),c=$("tgc").value,q=$("tgq").value.trim(),mn=mName(mk);
+  var all=trucks.map(function(t){var x=tgCalc(t,S,T);if(x)x.win=x.eta<W.from?"before":(x.eta>W.to?"after":"in");return x}).filter(Boolean);
+  var base=all.filter(function(x){return (!c||x.client===c)&&match(x.t,q)});
+  var n={in:0,before:0,after:0,late:0};base.forEach(function(x){n[x.win]++;if(x.late)n.late++});
+  var tiles=[["in",n.in,mn+" target · at yard "+fmtD(W.from)+" – "+fmtD(W.to),"main"],["before",n.before,"At yard before "+fmtD(W.from),""],["after",n.after,"At yard after "+fmtD(W.to),""],["late",n.late,"Delayed · over standard days",n.late?"bad":""]];
+  $("tgsum").innerHTML=tiles.map(function(x){return '<button type="button" data-w="'+x[0]+'" aria-pressed="'+(tgWin===x[0])+'" class="'+x[3]+'"><b>'+x[1]+'</b><span>'+esc(x[2])+'</span></button>'}).join("");
+  var inW=base.filter(function(x){return x.win==="in"}),wk=[];
+  for(var a=W.from;a<=W.to;a=addD(a,7)){var b=addD(a,6);if(b>W.to)b=W.to;wk.push([fmtD(a).slice(0,5)+" – "+fmtD(b).slice(0,5),inW.filter(function(x){return x.eta>=a&&x.eta<=b}).length])}
+  $("tgweek").innerHTML=wk.map(function(w){return '<button type="button" tabindex="-1" class="'+(w[1]?"":"zero")+'"><b>'+w[1]+'</b><span>'+esc(w[0])+'</span></button>'}).join("");
+  var inAll=all.filter(function(x){return x.win==="in"&&match(x.t,q)});
+  $("tgcli").innerHTML=CLIENTS.map(function(cl){var k=inAll.filter(function(x){return x.client===cl}).length;return '<button type="button" data-c="'+esc(cl)+'" aria-pressed="'+(c===cl)+'" class="'+(k?"":"zero")+'"><b>'+k+'</b><span>'+esc(cl)+'</span></button>'}).join("");
+  var list=base.filter(function(x){return tgWin==="late"?x.late:x.win===tgWin}).sort(function(a,b){return a.eta<b.eta?-1:a.eta>b.eta?1:(a.plate<b.plate?-1:1)});
+  tgRows=list;tgRows._mk=mk;tgRows._W=W;
+  var wl={in:mn,before:"Earlier",after:"Later"};
+  $("tgcnt").textContent=list.length+" truck(s)";
+  $("tgbody").innerHTML=list.length?list.map(function(x){var s=SO[x.step]||{},cls=x.late?"late":(s.st==="clearing"?"clearing":"transit");
+    return '<tr class="row" data-p="'+esc(x.plate)+'"><td><b>'+esc(x.plate)+'</b></td><td>'+esc(x.client)+'</td><td><span class="tag '+cls+'">'+esc(s.l||x.step)+'</span></td><td>'+esc(x.location)+'</td><td'+(x.late?' class="dl"':'')+'>'+x.inDays+'</td><td>'+x.std+'</td><td>'+x.left+'</td><td><b>'+fmtD(x.eta)+'</b></td><td><span class="tag '+(x.win==="in"?"ok":"")+'">'+esc(wl[x.win])+'</span>'+(x.late?' <span class="tag late">Delayed</span>':'')+'</td><td>'+esc(x.driver)+'</td></tr>'}).join(""):'<tr><td colspan="10" class="rnote">No trucks here.</td></tr>';
+  $("tgnote").textContent=all.length+" truck(s) on the return trip now. Trucks still going to the mine or at the mine are counted in the background and appear here once they start transit to Kasumbalesa or Sakania.";
+  drawStd(S);
+}
+async function drawStd(S){
+  var logs=await loadLogs(),bp=byPlate(logs),agg={};
+  Object.keys(bp).forEach(function(p){stagesOf(bp[p]).forEach(function(s){if(!s.to)return;var a=agg[s.step]=agg[s.step]||{n:0,sum:0};a.n++;a.sum+=dayDiff(s.from,s.to)})});
+  var steps=STEPS.filter(function(s){return S[s.k]!=null||agg[s.k]});
+  $("tgstd").innerHTML=steps.map(function(s){var st=S[s.k],a=agg[s.k],avg=a?a.sum/a.n:null,df=(st!=null&&avg!=null)?avg-st:null;
+    var stc=st==null?'<span class="rnote">not in target</span>':(canWrite?'<input class="tgin" type="number" min="0" max="60" step="0.5" data-k="'+s.k+'" value="'+st+'" aria-label="Standard days '+esc(s.l)+'">':st);
+    return '<tr><td><span class="tag">'+esc(s.l)+'</span> <span class="rnote">'+esc(s.g)+'</span></td><td>'+stc+'</td><td>'+(avg==null?'<span class="rnote">no data yet</span>':avg.toFixed(1))+'</td><td>'+(a?a.n:0)+'</td><td>'+(df==null?'':'<span class="diff '+(df>0.5?"up":(df<-0.5?"down":""))+'">'+(df>0?"+":"")+df.toFixed(1)+'</span>')+'</td></tr>'}).join("");
+  $("tgsave").hidden=!canWrite;
+}
+$("tgsum").addEventListener("click",function(e){var b=e.target.closest("button[data-w]");if(!b)return;tgWin=b.dataset.w;drawTarget(false)});
+$("tgcli").addEventListener("click",function(e){var b=e.target.closest("button[data-c]");if(!b)return;$("tgc").value=$("tgc").value===b.dataset.c?"":b.dataset.c;drawTarget(false)});
+["tgm","tgc","tgq"].forEach(function(id){$(id).addEventListener("input",function(){drawTarget(false)})});
+$("tgbody").addEventListener("click",function(e){var r=e.target.closest("tr.row");if(r)openEdit(r.dataset.p)});
+$("tgsave").onclick=async function(){if(!canWrite)return;
+  var rows=[].map.call(document.querySelectorAll(".tgin"),function(i){return {step:i.dataset.k,days:Math.max(0,Math.min(60,+i.value||0)),updated_at:new Date().toISOString(),updated_by:myName}});
+  var r=await sb.from("target_days").upsert(rows).select();if(r.error||!r.data.length){toast("Couldn't save");return}
+  toast("Standard days saved");drawTarget(true)};
+$("tgxl").onclick=function(){if(!tgRows.length){toast("Nothing to download");return}var W=tgRows._W;
+  var rows=[["Target month","At yard from","At yard to","Truck","Client","Status","Location","Days in status","Standard days","Days to yard","Expected at yard","Delayed","Driver"]].concat(tgRows.map(function(x){return [mName(tgRows._mk,1),fmtD(W.from),fmtD(W.to),x.plate,x.client,(SO[x.step]||{}).l||x.step,x.location,x.inDays,x.std,x.left,fmtD(x.eta),x.late?"Yes":"",x.driver]}));
+  saveSheet("Orbis Target "+mName(tgRows._mk,1),"Target",rows)};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trucks:"All trucks",users:"Users"};
 function show(v){
   if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
-  ["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
+  ["dash","detail","reports","target","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
   if(!r.data.length&&!canWrite){$("state").classList.add("off");$("stxt").textContent="No access";return false}
-  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
+  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
 }
 async function start(session){
   me=session.user;myName=me.email;canWrite=false;
