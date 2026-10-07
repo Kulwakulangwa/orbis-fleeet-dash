@@ -259,6 +259,25 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .rhead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
 .rhead b{font-size:22px;letter-spacing:-.02em}
 .rhead span{color:var(--mute);font-size:14px}
+/* ----- dashboard drill-down popup ----- */
+body.view-dash .card{cursor:pointer}
+body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-line)}
+body.view-dash .card .chip:hover .n,body.view-dash .card .half:hover .dir b{text-decoration:underline}
+.pop{position:fixed;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,22,26,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+@media (min-width:700px){.pop{align-items:center;padding:3vh 3vw}}
+.pop-in{width:min(1500px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;background:var(--surface);border-radius:24px 24px 0 0;padding:20px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 30px 80px -20px rgba(0,0,0,.5)}
+@media (min-width:700px){.pop-in{border-radius:24px;padding:24px}}
+.pop-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pop-h h3{margin:0;font-size:clamp(20px,2vw,28px);letter-spacing:-.02em}
+.pop-h .sub2{color:var(--mute);font-size:14px;margin-top:4px}
+.pop-x{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:var(--track);color:var(--fg);font-size:18px;cursor:pointer}
+.pcols{display:grid;grid-template-columns:repeat(var(--n,1),minmax(0,1fr));gap:16px;overflow:auto;min-height:0}
+@media (max-width:900px){.pcols{grid-template-columns:1fr}}
+.pcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.pcol h4{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:flex;gap:8px;align-items:baseline}
+.pcol h4 b{color:var(--fg);font-size:15px;letter-spacing:0}
+.pcol .tbl{overflow:auto}
+.pcol .tbl td.days .late{background:var(--warn);color:#1d1d1f;padding:2px 8px;border-radius:980px;font-weight:700}
 </style>
 </head>
 <body>
@@ -376,6 +395,18 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
   </form>
   <div class="ulist" id="ulist"></div>
 </main>
+</div>
+
+<div class="pop" id="pop" hidden role="dialog" aria-modal="true" aria-labelledby="ptitle">
+  <div class="pop-in">
+    <div class="pop-h"><div><h3 id="ptitle"></h3><div class="sub2" id="psub"></div></div><button class="pop-x" id="pclose" type="button" aria-label="Close">✕</button></div>
+    <div class="bar2">
+      <input id="pq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
+      <select id="pcl" aria-label="Client"></select>
+      <span class="cnt" id="pcnt"></span>
+    </div>
+    <div class="pcols" id="pcols"></div>
+  </div>
 </div>
 
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="eplate">
@@ -545,7 +576,7 @@ function rebuild(){
   data=blank();var last=null;
   trucks.forEach(function(t){var s=SO[t.step];if(!s)return;data[cli(t)][s.m]++;if(!last||t.updated_at>last.updated_at)last=t});
   meta={updated_at:last&&last.updated_at,updated_by:last&&last.updated_by};
-  render();drawDetail();drawTrucks();
+  render();drawDetail();drawTrucks();if(typeof drawPop==="function")drawPop();
 }
 
 /* ----- detail dashboard ----- */
@@ -757,6 +788,44 @@ $("hxl").onclick=function(){if(!hStages.length){toast("Nothing to download");ret
   var rows=[["Truck","From","To","Days","Status","Location","Trip","Driver","Trailer","Notes","Updated by"]].concat(hStages.map(function(s){return [p,fmtD(s.from),s.to?fmtD(s.to):"now",s.days,(SO[s.step]||{}).l||s.step,s.location||"",s.trip_no||1,s.drvTxt,s.trailer||"",s.noteTxt,s.by||""]}));
   saveSheet(p+" history "+fmtD(todayKey()).replace(/\//g,"-"),"History",rows)};
 
+/* ----- dashboard drill-down popup ----- */
+var POP=null,popTimer=null;
+function popIdle(){clearTimeout(popTimer);popTimer=setTimeout(function(){if(!$("pop").hidden&&$("sheet").hidden)closePop()},60000)}
+grid.addEventListener("click",function(e){
+  var card=e.target.closest(".card");if(!card||!grid.contains(card))return;
+  var i=Array.prototype.indexOf.call(grid.children,card),cd=CARDS[i];if(!cd)return;
+  var sp=SPLITS[cd[0]],parts=sp?sp.parts.map(function(h){return {key:h[0],name:h[1]}}):[{key:cd[0],name:MO[cd[0]].place}];
+  var title=sp?sp.lab:MO[cd[0]].label,client="";
+  var chip=e.target.closest(".chip"),half=e.target.closest(".half");
+  if(chip){var m=chip.id.match(/^r_(.+)_(\d+)$/);if(m){parts=parts.filter(function(p){return p.key===m[1]});client=CLIENTS[+m[2]]}}
+  else if(half){var hs=card.querySelectorAll(".half"),hi=Array.prototype.indexOf.call(hs,half);if(sp&&parts[hi])parts=[parts[hi]]}
+  openPop({title:title,parts:parts});$("pcl").value=client;drawPop();
+});
+function openPop(o){POP=o;$("pq").value="";
+  $("pcl").innerHTML=opt("","All clients")+CLIENTS.map(function(c){return opt(c,c,false)}).join("");
+  $("pop").hidden=false;document.body.style.overflow="hidden";popIdle();setTimeout(function(){$("pclose").focus()},30)}
+function closePop(){$("pop").hidden=true;POP=null;document.body.style.overflow="";clearTimeout(popTimer)}
+function drawPop(){
+  if(!POP||$("pop").hidden)return;
+  var c=$("pcl").value,q=$("pq").value.trim(),tot=0;
+  var cols=POP.parts.map(function(p){
+    var list=trucks.filter(function(t){var s=SO[t.step];return s&&s.m===p.key&&(!c||cli(t)===c)&&match(t,q)}).sort(function(a,b){return daysOf(b)-daysOf(a)});
+    tot+=list.length;
+    var rows=list.map(function(t){var s=SO[t.step]||{},d=daysOf(t),L=lim(t),cls=s.st==="clearing"?"clearing":(s.st==="in transit"?"transit":"");
+      return '<tr class="row" data-p="'+esc(t.plate)+'"><td><b>'+esc(t.plate)+'</b></td><td>'+esc(cli(t))+'</td><td><span class="tag '+cls+'">'+esc(s.l||t.step)+'</span></td><td>'+esc(t.location||"")+'</td><td class="days">'+(L&&d>L?'<span class="late" title="Over the normal '+L+' days">'+d+'</span>':d)+'</td><td>'+(t.trip_no||1)+'</td></tr>'}).join("");
+    return '<div class="pcol"><h4>'+esc(p.name)+' <b>'+list.length+'</b></h4><div class="tbl"><table><thead><tr><th>Truck</th><th>Client</th><th>Status</th><th>Location</th><th>Days</th><th>Trip</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="rnote">No trucks</td></tr>')+'</tbody></table></div></div>'});
+  $("pcols").style.setProperty("--n",POP.parts.length);$("pcols").innerHTML=cols.join("");
+  $("ptitle").textContent=POP.title+(POP.parts.length===1?" · "+POP.parts[0].name:"")+(c?" · "+c:"");
+  $("psub").textContent=tot+(tot===1?" truck":" trucks")+" · sorted by days at this stage";
+  $("pcnt").textContent=tot+" shown";
+}
+$("pcols").addEventListener("click",function(e){var r=e.target.closest("tr.row");if(r)openEdit(r.dataset.p)});
+["pq","pcl"].forEach(function(id){$(id).addEventListener("input",drawPop)});
+$("pclose").onclick=closePop;
+$("pop").addEventListener("click",function(e){if(e.target===$("pop"))closePop()});
+["pointerdown","keydown","input","wheel"].forEach(function(ev){$("pop").addEventListener(ev,popIdle,{passive:true})});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("pop").hidden&&$("sheet").hidden)closePop()},true);
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
@@ -765,6 +834,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)}
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
 var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",trucks:"All trucks",users:"Users"};
 function show(v){
+  if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
   ["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
@@ -776,7 +846,7 @@ function show(v){
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
