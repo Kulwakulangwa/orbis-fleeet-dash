@@ -256,6 +256,7 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .tgsum button span{font-size:13px;color:var(--mute)}
 .tgsum button.main b{font-size:clamp(40px,4.4vw,60px)}
 .tgsum button.bad b{color:var(--err)}
+.tgsum button.soft{border-style:dashed}.tgsum button.soft b{color:var(--mute)}
 .tgsum button[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 1px var(--fg)}
 .tghd{margin:16px 0 8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .tgh3{margin:28px 0 4px;font-size:22px;letter-spacing:-.02em}
@@ -878,10 +879,15 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("pop").h
 /* ----- target (return-trip projection to the yard) ----- */
 var TG_PATH={kas:["in_tr_kasumbalesa","in_kasumbalesa","in_tr_nakonde","in_nakonde","in_tunduma","in_tr_dar","offload_dar"],
              sak:["in_tr_sakania","in_sakania","in_tr_nakonde","in_nakonde","in_tunduma","in_tr_dar","offload_dar"]};
-var TG_DEF={in_tr_kasumbalesa:3,in_tr_sakania:3,in_kasumbalesa:5,in_sakania:5,in_tr_nakonde:3,in_nakonde:3,in_tunduma:2,in_tr_dar:3,offload_dar:3};
+var TG_DEF={at_yard:2,wait_dar:1,load_dar:1,loaded_dar:1,out_tr_tunduma:3,out_tunduma:2,out_nakonde:3,out_tr_kasumbalesa:3,out_tr_sakania:3,out_kasumbalesa:5,out_sakania:5,out_tr_whisky:0,out_tr_mine:3,offload_mine:3,wait_mine:5,load_mine:1,loaded_mine:15,in_tr_whisky:0,
+  in_tr_kasumbalesa:3,in_tr_sakania:3,in_kasumbalesa:5,in_sakania:5,in_tr_nakonde:3,in_nakonde:3,in_tunduma:2,in_tr_dar:3,offload_dar:3};
+/* full cycle to the yard: Dar loading -> going -> mine -> return. Border side follows the truck's status; Kasumbalesa when not known yet */
+var TG_CYC={kas:["wait_dar","load_dar","loaded_dar","out_tr_tunduma","out_tunduma","out_nakonde","out_tr_kasumbalesa","out_kasumbalesa","out_tr_whisky","out_tr_mine","offload_mine","wait_mine","load_mine","loaded_mine","in_tr_whisky"].concat(TG_PATH.kas),
+            sak:["wait_dar","load_dar","loaded_dar","out_tr_tunduma","out_tunduma","out_nakonde","out_tr_sakania","out_sakania","out_tr_whisky","out_tr_mine","offload_mine","wait_mine","load_mine","loaded_mine","in_tr_whisky"].concat(TG_PATH.kas)};
 var TG_STD=null,tgWin="in",tgRows=[];
 function addD(k,n){var d=new Date(k+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
-function tgPath(step){var p=TG_PATH.kas.indexOf(step)>=0?TG_PATH.kas:(TG_PATH.sak.indexOf(step)>=0?TG_PATH.sak:null);return p?p.slice(p.indexOf(step)):null}
+function tgPath(step){var p=TG_PATH.kas.indexOf(step)>=0?TG_PATH.kas:(TG_PATH.sak.indexOf(step)>=0?TG_PATH.sak:null);if(p)return {ret:true,p:p.slice(p.indexOf(step))};
+  p=TG_CYC.sak.indexOf(step)>=0&&TG_CYC.kas.indexOf(step)<0?TG_CYC.sak:(TG_CYC.kas.indexOf(step)>=0?TG_CYC.kas:null);return p?{ret:false,p:p.slice(p.indexOf(step))}:null}
 async function loadStd(force){if(TG_STD&&!force)return TG_STD;var m={};Object.keys(TG_DEF).forEach(function(k){m[k]=TG_DEF[k]});
   var r=await sb.from("target_days").select("step,days");if(!r.error&&r.data)r.data.forEach(function(x){m[x.step]=+x.days});TG_STD=m;return m}
 function monthKey(y,m){return y+"-"+String(m).padStart(2,"0")}
@@ -892,31 +898,32 @@ function fillTgMonths(){var sel=$("tgm"),v=sel.value,T=todayKey(),y=+T.slice(0,4
   var def=v&&o.indexOf(v)>=0?v:o[1];
   sel.innerHTML=o.map(function(k){return opt(k,mName(k,1)+" target",k===def)}).join("")}
 /* one truck: days left in this status (at least 1 when over standard) + standard days of every later status to the yard */
-function tgCalc(t,S,T){var path=tgPath(t.step);if(!path)return null;
+function tgCalc(t,S,T){var pp=tgPath(t.step);if(!pp)return null;var path=pp.p;
   var since=t.stage_since||T,el=Math.max(0,dayDiff(since,T)),std=S[t.step]||0,late=el+1>std,left=late?1:Math.max(0,std-el);
   var tot=left+path.slice(1).reduce(function(a,k){return a+(S[k]||0)},0);
-  return {plate:t.plate,client:cli(t),step:t.step,location:t.location||"",driver:t.driver||"",inDays:el+1,std:std,late:late,left:Math.ceil(tot),eta:addD(T,Math.ceil(tot)),t:t}}
+  return {plate:t.plate,client:cli(t),step:t.step,location:t.location||"",driver:t.driver||"",inDays:el+1,std:std,late:late,left:Math.ceil(tot),eta:addD(T,Math.ceil(tot)),ret:pp.ret,t:t}}
 async function drawTarget(force){
   if($("target").hidden)return;
   fillTgMonths();var cv=$("tgc").value;$("tgc").innerHTML=opt("","All clients")+CLIENTS.map(function(c){return opt(c,c,c===cv)}).join("");
   var S=await loadStd(force),T=todayKey(),mk=$("tgm").value,W=tgWindow(mk),c=$("tgc").value,q=$("tgq").value.trim(),mn=mName(mk);
   var all=trucks.map(function(t){var x=tgCalc(t,S,T);if(x)x.win=x.eta<W.from?"before":(x.eta>W.to?"after":"in");return x}).filter(Boolean);
+  var early=all.filter(function(x){return !x.ret&&(!c||x.client===c)&&match(x.t,q)});all=all.filter(function(x){return x.ret});
   var base=all.filter(function(x){return (!c||x.client===c)&&match(x.t,q)});
-  var n={in:0,before:0,after:0,late:0};base.forEach(function(x){n[x.win]++;if(x.late)n.late++});
-  var tiles=[["in",n.in,mn+" target · at yard "+fmtD(W.from)+" – "+fmtD(W.to),"main"],["before",n.before,"At yard before "+fmtD(W.from),""],["after",n.after,"At yard after "+fmtD(W.to),""],["late",n.late,"Delayed · over standard days",n.late?"bad":""]];
+  var n={in:0,before:0,after:0,late:0,early:0};base.forEach(function(x){n[x.win]++;if(x.late)n.late++});early.forEach(function(x){if(x.win==="in")n.early++});
+  var tiles=[["in",n.in,mn+" target · at yard "+fmtD(W.from)+" – "+fmtD(W.to),"main"],["before",n.before,"At yard before "+fmtD(W.from),""],["after",n.after,"At yard after "+fmtD(W.to),""],["late",n.late,"Delayed · over standard days",n.late?"bad":""],["early",n.early,"Early view · still going or at the mine, may also reach the yard in "+mn,"soft"]];
   $("tgsum").innerHTML=tiles.map(function(x){return '<button type="button" data-w="'+x[0]+'" aria-pressed="'+(tgWin===x[0])+'" class="'+x[3]+'"><b>'+x[1]+'</b><span>'+esc(x[2])+'</span></button>'}).join("");
   var inW=base.filter(function(x){return x.win==="in"}),wk=[];
   for(var a=W.from;a<=W.to;a=addD(a,7)){var b=addD(a,6);if(b>W.to)b=W.to;wk.push([fmtD(a).slice(0,5)+" – "+fmtD(b).slice(0,5),inW.filter(function(x){return x.eta>=a&&x.eta<=b}).length])}
   $("tgweek").innerHTML=wk.map(function(w){return '<button type="button" tabindex="-1" class="'+(w[1]?"":"zero")+'"><b>'+w[1]+'</b><span>'+esc(w[0])+'</span></button>'}).join("");
   var inAll=all.filter(function(x){return x.win==="in"&&match(x.t,q)});
   $("tgcli").innerHTML=CLIENTS.map(function(cl){var k=inAll.filter(function(x){return x.client===cl}).length;return '<button type="button" data-c="'+esc(cl)+'" aria-pressed="'+(c===cl)+'" class="'+(k?"":"zero")+'"><b>'+k+'</b><span>'+esc(cl)+'</span></button>'}).join("");
-  var list=base.filter(function(x){return tgWin==="late"?x.late:x.win===tgWin}).sort(function(a,b){return a.eta<b.eta?-1:a.eta>b.eta?1:(a.plate<b.plate?-1:1)});
+  var list=(tgWin==="early"?early.filter(function(x){return x.win==="in"}):base.filter(function(x){return tgWin==="late"?x.late:x.win===tgWin})).sort(function(a,b){return a.eta<b.eta?-1:a.eta>b.eta?1:(a.plate<b.plate?-1:1)});
   tgRows=list;tgRows._mk=mk;tgRows._W=W;
-  var wl={in:mn,before:"Earlier",after:"Later"};
+  var wl={in:mn,before:"Earlier",after:"Later"};if(tgWin==="early")wl.in="Early view";
   $("tgcnt").textContent=list.length+" truck(s)";
   $("tgbody").innerHTML=list.length?list.map(function(x){var s=SO[x.step]||{},cls=x.late?"late":(s.st==="clearing"?"clearing":"transit");
     return '<tr class="row" data-p="'+esc(x.plate)+'"><td><b>'+esc(x.plate)+'</b></td><td>'+esc(x.client)+'</td><td><span class="tag '+cls+'">'+esc(s.l||x.step)+'</span></td><td>'+esc(x.location)+'</td><td'+(x.late?' class="dl"':'')+'>'+x.inDays+'</td><td>'+x.std+'</td><td>'+x.left+'</td><td><b>'+fmtD(x.eta)+'</b></td><td><span class="tag '+(x.win==="in"?"ok":"")+'">'+esc(wl[x.win])+'</span>'+(x.late?' <span class="tag late">Delayed</span>':'')+'</td><td>'+esc(x.driver)+'</td></tr>'}).join(""):'<tr><td colspan="10" class="rnote">No trucks here.</td></tr>';
-  $("tgnote").textContent=all.length+" truck(s) on the return trip now. Trucks still going to the mine or at the mine are counted in the background and appear here once they start transit to Kasumbalesa or Sakania.";
+  $("tgnote").textContent=all.length+" truck(s) on the return trip now count for the target. "+early.length+" truck(s) still going or at the mine are projected in the background (Early view) and join the target once they start transit to Kasumbalesa or Sakania. Trucks at the yard or in maintenance are not projected.";
   drawStd(S);
 }
 async function drawStd(S){
