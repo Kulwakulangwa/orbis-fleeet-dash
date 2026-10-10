@@ -239,7 +239,7 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .urow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .urow:last-child{border-bottom:0}
 .urow b{display:block}.urow span{font-size:13px;color:var(--mute)}
-.uform{display:grid;grid-template-columns:2fr 1.4fr auto auto;gap:8px;align-items:end}
+.uform{display:grid;grid-template-columns:2fr 1.4fr auto 1.2fr auto;gap:8px;align-items:end}
 @media (max-width:700px){.uform{grid-template-columns:1fr}}
 .chk{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--fg);padding:10px 0}
 .btn.sm{font-size:14px;padding:9px 16px}
@@ -338,6 +338,47 @@ tr.moved td{opacity:.55}
 .tslist label:has(input:checked){border-color:var(--fg)}
 .tslist small{display:block;color:var(--mute);font-size:11px}
 .tslist .none{color:var(--mute);font-size:13px;padding:6px}
+/* tunduma expenses */
+.xtabs{flex-wrap:wrap}
+.xtabs button small{font-weight:600;margin-left:6px;padding:1px 7px;border-radius:980px;background:var(--track);font-variant-numeric:tabular-nums}
+.xtabs button[aria-selected="true"] small{background:rgba(255,159,10,.25)}
+.xsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+#xs_now,#xs_list{display:grid;gap:12px;align-content:start}
+#xs_now .tpgrid{margin-top:0}
+.xtabs{border-radius:22px}
+@media (max-width:700px){.xsum{grid-template-columns:1fr 1fr}.xsum span{font-size:18px}}
+.xsum div{background:var(--card-bg);border:1px solid var(--card-line);border-radius:18px;padding:12px 14px;min-width:0}
+.xsum b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-bottom:4px}
+.xsum span{display:block;font-size:20px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.xsum small{display:block;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.tag.req{background:rgba(255,159,10,.22)}.tag.app{background:rgba(10,132,255,.2)}.tag.paid{background:rgba(52,199,89,.22)}.tag.rej{background:rgba(255,59,48,.22)}
+.tag.out{background:rgba(10,132,255,.14)}.tag.in{background:rgba(52,199,89,.16)}
+.tag.flag{background:rgba(255,59,48,.16)}
+.xamt{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td.xamt b{font-weight:600}
+.tbl td.ck,.tbl th.ck{width:36px;padding-right:0}
+.tbl input[type=checkbox]{width:18px;height:18px;accent-color:var(--fg)}
+.xbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.xbar .cnt{font-size:14px;color:var(--mute)}
+.xempty{padding:22px;text-align:center;color:var(--mute);font-size:14px;background:var(--card-bg);border:1px dashed var(--card-line);border-radius:20px}
+.tpc .xl{display:flex;flex-wrap:wrap;gap:4px}
+.xin{width:min(640px,100%)}
+.xlines{display:grid;gap:6px;margin:4px 0 12px}
+.xline{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:10px 12px;border:1px solid var(--card-line);border-radius:14px;background:var(--surface);font-size:14px;text-align:left;font:inherit;color:var(--fg);cursor:pointer;width:100%}
+.xline:hover{border-color:var(--fg)}
+.xline b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.xline .a{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.xline small{grid-column:1/-1;color:var(--mute);font-size:12px}
+.xwarn{grid-column:1/-1;font-size:13px;padding:10px 12px;border-radius:12px;background:rgba(255,159,10,.16)}
+.xhist{margin-top:12px;font-size:13px;color:var(--mute);display:grid;gap:4px}
+.xhist div b{color:var(--fg);font-weight:600}
+.xdet{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;margin:6px 0 10px}
+.xdet span{color:var(--mute)}
+.xdet div{min-width:0;overflow-wrap:anywhere}
+.xtypes{display:grid;gap:6px;max-height:320px;overflow:auto;margin-top:10px}
+.xtypes label{display:flex;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--card-line);border-radius:12px;font-size:14px;background:var(--surface)}
+.btn.warn{background:rgba(255,59,48,.9);color:#fff}
+@media (max-width:700px){.xhide{display:none}}
 </style>
 </head>
 <body>
@@ -365,6 +406,7 @@ tr.moved td{opacity:.55}
   <button type="button" data-view="reports">Reports</button>
   <button type="button" data-view="target">Target</button>
   <button type="button" data-view="trips">Trips</button>
+  <button type="button" data-view="tzx" id="mtzx" hidden>Tunduma expenses</button>
   <button type="button" data-view="trucks" id="mtrucks" hidden>All trucks (edit)</button>
   <button type="button" data-view="users" id="musers" hidden>Users</button>
   <hr>
@@ -497,6 +539,41 @@ tr.moved td{opacity:.55}
   </section>
 </main>
 
+<main class="page" id="tzx" hidden>
+  <h2>Tunduma expenses</h2>
+  <p class="lead" id="xlead"></p>
+  <div class="xsum" id="xsum"></div>
+  <div class="rtabs xtabs" role="tablist">
+    <button type="button" role="tab" data-x="now" aria-selected="true">At Tunduma now<small id="xn_now"></small></button>
+    <button type="button" role="tab" data-x="req" aria-selected="false">To approve<small id="xn_req"></small></button>
+    <button type="button" role="tab" data-x="app" aria-selected="false">To pay<small id="xn_app"></small></button>
+    <button type="button" role="tab" data-x="all" aria-selected="false">All expenses</button>
+  </div>
+  <section id="xs_now">
+    <div class="bar2"><input id="xq_now" type="search" placeholder="Search plate…" aria-label="Search trucks"><button class="btn sm" id="xother" type="button" hidden>Add other truck</button><span class="cnt" id="xc_now"></span></div>
+    <div class="tpgrid" id="xgrid"></div>
+  </section>
+  <section id="xs_list" hidden>
+    <div class="bar2" id="xfilt">
+      <input id="xq" type="search" placeholder="Search plate, type, trip no., reference…" aria-label="Search expenses">
+      <select id="xst" aria-label="Status"><option value="">All statuses</option><option value="requested">Requested</option><option value="approved">Approved · not paid</option><option value="paid">Paid</option><option value="rejected">Rejected</option></select>
+      <select id="xcur" aria-label="Currency"><option value="">All currencies</option><option>TZS</option><option>ZMW</option><option>USD</option></select>
+      <label class="fld" style="display:flex;align-items:center;gap:6px">From<input id="xfrom" type="date"></label>
+      <label class="fld" style="display:flex;align-items:center;gap:6px">To<input id="xto" type="date"></label>
+      <button class="btn sm ghost" id="xxl" type="button">Download Excel</button>
+    </div>
+    <div class="xbar" id="xacts">
+      <button class="btn sm" id="xappsel" type="button" hidden>Approve selected</button>
+      <button class="btn sm ghost" id="xappclean" type="button" hidden>Approve all with no flags</button>
+      <button class="btn sm" id="xpaysel" type="button" hidden>Mark selected paid</button>
+      <button class="btn sm ghost" id="xtypesbtn" type="button" hidden>Expense types</button>
+      <span class="cnt" id="xcnt"></span>
+    </div>
+    <div class="tbl"><table><thead id="xhead"></thead><tbody id="xbody"></tbody></table></div>
+    <p class="rnote" id="xnote"></p>
+  </section>
+</main>
+
 <main class="page" id="users" hidden>
   <h2>Users</h2>
   <p class="lead">People on this list can sign in and see the boards. Only accounts with "Can edit" can change trucks. Each person also needs a login: create it in Supabase → Authentication → Users with the same email.</p>
@@ -504,6 +581,7 @@ tr.moved td{opacity:.55}
     <label class="fld">Email<input id="uemail" type="email" required></label>
     <label class="fld">Name<input id="uname" type="text" required></label>
     <label class="chk"><input id="uedit" type="checkbox"> Can edit</label>
+    <label class="fld">Tunduma expenses<select id="ufin"><option value="">No access</option><option value="runner">Runner · adds requests</option><option value="approver">Approver</option><option value="payer">Finance · pays</option></select></label>
     <button class="btn sm" type="submit">Add user</button>
   </form>
   <div class="ulist" id="ulist"></div>
@@ -579,6 +657,45 @@ tr.moved td{opacity:.55}
     </div>
     <datalist id="tsplaces"></datalist>
     <div class="acts"><button class="btn ghost" id="tscancel" type="button">Close</button><button class="btn" id="tssave" type="submit">Save</button></div>
+  </form>
+</div>
+
+<div class="sheet" id="xsheet" hidden role="dialog" aria-modal="true" aria-labelledby="xstitle">
+  <form class="sheet-in xin" id="xform" novalidate>
+    <h3 id="xstitle">Truck</h3>
+    <div class="sub2" id="xssub"></div>
+    <div class="fgrid" id="xpickbox">
+      <label class="fld">Truck<input id="x_plate" list="xplates" autocomplete="off" placeholder="e.g. T152ELP"></label>
+      <label class="fld">Direction<select id="x_dir"><option value="out">Outbound · going to Congo</option><option value="in">Inbound · coming to Dar</option></select></label>
+      <label class="fld">Trip number<input id="x_trip" type="number" inputmode="numeric"></label>
+    </div>
+    <div class="xlines" id="xlines"></div>
+    <div id="xaddbox">
+      <div class="tsleg w"><b id="xaddt">Add expense</b> <span id="xadds">Sent to Amrin for approval</span></div>
+      <div class="fgrid">
+        <label class="fld">Expense type<input id="x_type" list="xtypelist" autocomplete="off" placeholder="Pick or type"></label>
+        <label class="fld">Date<input id="x_date" type="date"></label>
+        <label class="fld">Currency<select id="x_cur"><option value="TZS">TZS · Tanzania shilling</option><option value="ZMW">ZMW · Zambia kwacha</option><option value="USD">USD · US dollar</option></select></label>
+        <label class="fld">Amount<input id="x_amt" type="number" step="any" min="0" inputmode="decimal"></label>
+        <div class="xwarn" id="xdupw" hidden>This type is already entered for this truck on this visit. If it is a real second charge, write why.</div>
+        <label class="fld w" id="xdupbox" hidden>Why is it charged again?<input id="x_dup"></label>
+        <label class="fld w">Note<input id="x_note" placeholder="Optional"></label>
+        <label class="fld w" id="xrecbox">Receipt photo (optional)<input id="x_rec" type="file" accept="image/*,application/pdf"></label>
+      </div>
+    </div>
+    <datalist id="xplates"></datalist><datalist id="xtypelist"></datalist>
+    <div class="acts"><button class="btn ghost" id="xcancel" type="button">Close</button><button class="btn" id="xsave" type="submit">Send request</button></div>
+  </form>
+</div>
+
+<div class="sheet" id="xlsheet" hidden role="dialog" aria-modal="true" aria-labelledby="xltitle">
+  <form class="sheet-in xin" id="xlform" novalidate>
+    <h3 id="xltitle">Expense</h3>
+    <div class="sub2" id="xlsub"></div>
+    <div class="xdet" id="xldet"></div>
+    <div class="fgrid" id="xlbox"></div>
+    <div class="xhist" id="xlhist"></div>
+    <div class="acts" id="xlacts"></div>
   </form>
 </div>
 
@@ -839,16 +956,16 @@ function upsertLocal(t){var i=trucks.findIndex(function(x){return x.plate===t.pl
 
 /* ----- users ----- */
 async function loadUsers(){
-  var r=await sb.from("fleet_users").select("email,name,can_edit").order("email");
+  var r=await sb.from("fleet_users").select("email,name,can_edit,fin_role").order("email");
   if(r.error){$("ulist").innerHTML='<div class="urow"><span>Could not load users.</span></div>';return}
   $("ulist").innerHTML=r.data.map(function(u){var mine=me&&u.email.toLowerCase()===me.email.toLowerCase();
-    return '<div class="urow"><div><b>'+esc(u.name||u.email)+'</b><span>'+esc(u.email)+' · '+(u.can_edit?"can edit":"view only")+'</span></div>'+(mine?'<span>you</span>':'<button class="btn ghost sm" data-del="'+esc(u.email)+'" type="button">Remove</button>')+'</div>'}).join("");
+    return '<div class="urow"><div><b>'+esc(u.name||u.email)+'</b><span>'+esc(u.email)+' · '+(u.can_edit?"can edit":"view only")+(u.fin_role?' · Tunduma expenses: '+({runner:"runner",approver:"approver",payer:"finance (pays)"}[u.fin_role]||u.fin_role):'')+'</span></div>'+(mine?'<span>you</span>':'<button class="btn ghost sm" data-del="'+esc(u.email)+'" type="button">Remove</button>')+'</div>'}).join("");
 }
 $("ulist").addEventListener("click",async function(e){var b=e.target.closest("[data-del]");if(!b)return;
   if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to remove";return}
   var r=await sb.from("fleet_users").delete().eq("email",b.dataset.del).select();toast(r.error||!r.data.length?"Couldn't remove":"Removed");loadUsers()});
 $("uform").onsubmit=async function(e){e.preventDefault();
-  var row={email:$("uemail").value.trim().toLowerCase(),name:$("uname").value.trim(),can_edit:$("uedit").checked};
+  var row={email:$("uemail").value.trim().toLowerCase(),name:$("uname").value.trim(),can_edit:$("uedit").checked,fin_role:$("ufin").value||null};
   var r=await sb.from("fleet_users").upsert(row).select();
   if(r.error||!r.data.length){toast("Couldn't add user");return}
   $("uform").reset();toast("User added");loadUsers()};
@@ -1213,39 +1330,308 @@ $("tsform").onsubmit=async function(e){e.preventDefault();if(!canWrite)return;
     toast("Trip "+no+" saved");closeTS();
   }finally{b.disabled=false;b.textContent="Save";tripsAt=0;if(!$("trips").hidden)drawTrips(true)}};
 
+/* ----- Tunduma expenses (finance only) ----- */
+var finRole=null,XR=[],XT=[],xAt=0,xTab="now",xSel={},xVisit=null,xLine=null,xMode="";
+var XSTEP={out_tunduma:"out",out_nakonde:"out",in_nakonde:"in",in_tunduma:"in"};
+var XDIR={out:"Outbound · to Congo",in:"Inbound · to Dar"};
+var XST={requested:["Requested","req"],approved:["Approved · not paid","app"],paid:["Paid","paid"],rejected:["Rejected","rej"]};
+var XERR={NOT_ALLOWED:"Your account can't do this",DUPLICATE:"Already entered for this visit. Write why it is charged again",LOCKED:"This expense is already approved or paid, so it can't be changed",NO_REASON:"Write a reason first",BAD_AMOUNT:"Enter a correct amount",NO_TYPE:"Pick the expense type"};
+function xErr(e){var m=(e&&e.message)||"";for(var k in XERR)if(m.indexOf(k)>=0)return XERR[k];return "Couldn't save. Check the connection and try again"}
+function xToday(){return dkey(new Date())}
+function xAdd(k,n){var d=new Date(k+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function xNum(v){return Number(v).toLocaleString("en-US",{maximumFractionDigits:2})}
+function xMoney(m){var o=["TZS","ZMW","USD"].filter(function(c){return m[c]}).map(function(c){return xNum(m[c])+" "+c});return o.length?o.join(" · "):"0"}
+function xTot(rows){var m={};rows.forEach(function(r){m[r.currency]=(m[r.currency]||0)+Number(r.amount)});return m}
+function xKey(p,t,d){return p+"|"+(t==null?"":t)+"|"+d}
+function xVis(r){return xKey(r.plate,r.trip_no,r.direction)}
+function xTruck(p){return trucks.find(function(t){return t.plate===p})}
+function xFlags(r){var f=[];if(r.dup_reason)f.push('<span class="tag flag" title="'+esc(r.dup_reason)+'">Second charge</span>');if(r.off_board)f.push('<span class="tag flag">Not at Tunduma in Fleet Status</span>');if(r.updated_at&&r.status==="requested")f.push('<span class="tag">Edited</span>');if(r.receipt)f.push('<span class="tag">Receipt</span>');return f.join(" ")}
+function xClean(r){return !r.dup_reason&&!r.off_board}
+function xStTag(s){var x=XST[s]||[s,""];return '<span class="tag '+x[1]+'">'+esc(x[0])+'</span>'}
+
+async function xLoad(force){
+  if(!finRole||!sb)return;
+  if(!force&&Date.now()-xAt<30000){xDraw();return}
+  var a=await Promise.all([sb.from("tz_expenses").select("*").order("id",{ascending:false}).limit(5000),sb.from("tz_expense_types").select("*").order("sort")]);
+  if(a[0].error){toast("Couldn't load expenses");return}
+  XR=a[0].data||[];XT=(a[1].data||[]);xAt=Date.now();xDraw();
+}
+function xTypes(){var s={};XT.filter(function(t){return t.active}).forEach(function(t){s[t.name]=1});return Object.keys(s)}
+
+function xDraw(){
+  if($("tzx").hidden)return;
+  var lead={runner:"Tap a truck at Tunduma to add its expenses. Each request goes to Amrin for approval. After approval it can't be changed.",
+    approver:"Check each request, then approve or reject it. Flags show second charges, edited entries and trucks that Fleet Status doesn't show at Tunduma.",
+    payer:"Approved expenses stay in To pay until you mark them paid, so nothing is typed twice. Select them and add the payment date and reference."};
+  $("xlead").textContent=lead[finRole]||"";
+  var req=XR.filter(function(r){return r.status==="requested"}),app=XR.filter(function(r){return r.status==="approved"}),rej=XR.filter(function(r){return r.status==="rejected"}),
+      wk=xAdd(xToday(),-6),paid=XR.filter(function(r){return r.status==="paid"&&r.paid_on&&r.paid_on>=wk});
+  $("xsum").innerHTML='<div><b>Waiting approval</b><span>'+req.length+'</span><small>'+xMoney(xTot(req))+'</small></div>'+
+    '<div><b>Approved · not paid</b><span>'+app.length+'</span><small>'+xMoney(xTot(app))+'</small></div>'+
+    '<div><b>Paid · last 7 days</b><span>'+paid.length+'</span><small>'+xMoney(xTot(paid))+'</small></div>'+
+    '<div><b>Rejected · to fix</b><span>'+rej.length+'</span><small>'+(rej.length?"Open the truck to fix or cancel":"None")+'</small></div>';
+  var now=xNow();$("xn_now").textContent=now.length;$("xn_req").textContent=req.length;$("xn_app").textContent=app.length;
+  $("xother").hidden=finRole!=="runner";
+  document.querySelectorAll(".xtabs button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.x===xTab)});
+  $("xs_now").hidden=xTab!=="now";$("xs_list").hidden=xTab==="now";
+  if(xTab==="now")xDrawNow(now);else xDrawList();
+}
+function xNow(){return trucks.filter(function(t){return XSTEP[t.step]}).sort(function(a,b){return a.plate<b.plate?-1:1})}
+function xDrawNow(list){
+  var q=$("xq_now").value.trim().toUpperCase();if(q)list=list.filter(function(t){return t.plate.indexOf(q)>=0||String(t.trip_no||"").indexOf(q)>=0});
+  $("xc_now").textContent=list.length+" truck"+(list.length===1?"":"s");
+  if(!list.length){$("xgrid").innerHTML='<div class="xempty" style="grid-column:1/-1">No truck shows Tunduma or Nakonde in Fleet Status right now.'+(finRole==="runner"?' Use Add other truck if a truck is there.':'')+'</div>';return}
+  $("xgrid").innerHTML=list.map(function(t){var dir=XSTEP[t.step],k=xKey(t.plate,t.trip_no||null,dir),rows=XR.filter(function(r){return xVis(r)===k&&r.status!=="rejected"}),
+      rj=XR.filter(function(r){return xVis(r)===k&&r.status==="rejected"}).length,s=SO[t.step]||{},by={};
+    rows.forEach(function(r){by[r.status]=(by[r.status]||0)+1});
+    return '<button type="button" class="tpc" data-xp="'+esc(t.plate)+'" data-xd="'+dir+'" data-xt="'+(t.trip_no||"")+'"><div class="tn"><b>'+esc(t.plate)+'</b><span class="tag '+dir+'">'+XDIR[dir]+'</span></div>'+
+      '<div class="kv"><span>Status</span><span>'+esc(s.l||t.step)+' · '+daysOf(t)+'d</span></div>'+
+      '<div class="kv"><span>Trip</span><span>'+(t.trip_no||"–")+' · '+esc(cli(t))+'</span></div>'+
+      (t.driver?'<div class="kv"><span>Driver</span><span>'+esc(t.driver)+'</span></div>':'')+
+      '<div class="kv val"><span>Expenses</span><span>'+(rows.length?xMoney(xTot(rows)):"None yet")+'</span></div>'+
+      '<div class="xl">'+Object.keys(by).map(function(st){return '<span class="tag '+XST[st][1]+'">'+by[st]+' '+XST[st][0].toLowerCase()+'</span>'}).join("")+(rj?'<span class="tag rej">'+rj+' rejected</span>':'')+'</div></button>'}).join("");
+}
+$("xgrid").addEventListener("click",function(e){var b=e.target.closest("[data-xp]");if(!b)return;xOpenVisit(b.dataset.xp,b.dataset.xt?+b.dataset.xt:null,b.dataset.xd,false)});
+$("xq_now").oninput=function(){xDrawNow(xNow())};
+$("xother").onclick=function(){xOpenVisit("",null,"out",true)};
+document.querySelectorAll(".xtabs button").forEach(function(b){b.onclick=function(){xTab=b.dataset.x;xSel={};xDraw()}});
+
+function xRows(){
+  var q=$("xq").value.trim().toUpperCase(),cur=$("xcur").value,st=$("xst").value,f=$("xfrom").value,to=$("xto").value,rows=XR;
+  if(xTab==="req")rows=rows.filter(function(r){return r.status==="requested"});
+  else if(xTab==="app")rows=rows.filter(function(r){return r.status==="approved"});
+  else{if(st)rows=rows.filter(function(r){return r.status===st});if(f)rows=rows.filter(function(r){return r.visit_date>=f});if(to)rows=rows.filter(function(r){return r.visit_date<=to})}
+  if(cur)rows=rows.filter(function(r){return r.currency===cur});
+  if(q)rows=rows.filter(function(r){return (r.plate+" "+r.exp_type+" "+(r.trip_no||"")+" "+(r.pay_ref||"")+" "+(r.note||"")).toUpperCase().indexOf(q)>=0});
+  return rows.slice().sort(function(a,b){return a.visit_date<b.visit_date?1:a.visit_date>b.visit_date?-1:b.id-a.id});
+}
+function xDrawList(){
+  var all=xTab==="all",ck=(xTab==="req"&&finRole==="approver")||(xTab==="app"&&finRole==="payer");
+  $("xst").hidden=!all;$("xfrom").parentNode.hidden=!all;$("xto").parentNode.hidden=!all;
+  $("xappsel").hidden=$("xappclean").hidden=!(xTab==="req"&&finRole==="approver");$("xpaysel").hidden=!(xTab==="app"&&finRole==="payer");$("xtypesbtn").hidden=finRole!=="approver";
+  var rows=xRows();
+  var allOn=rows.length&&rows.every(function(r){return xSel[r.id]});
+  Object.keys(xSel).forEach(function(id){if(!rows.some(function(r){return r.id==id}))delete xSel[id]});
+  $("xhead").innerHTML='<tr>'+(ck?'<th class="ck"><input type="checkbox" id="xall" aria-label="Select all"'+(allOn?" checked":"")+'></th>':'')+'<th>Date</th><th>Truck</th><th>Trip</th><th class="xhide">Direction</th><th>Type</th><th class="xamt">Amount</th><th>Status</th><th>Flags</th><th class="xhide">By</th>'+(xTab!=="req"?'<th class="xhide">Paid</th>':'')+'</tr>';
+  $("xbody").innerHTML=rows.length?rows.map(function(r){return '<tr class="row" data-xid="'+r.id+'">'+(ck?'<td class="ck"><input type="checkbox" data-ck="'+r.id+'"'+(xSel[r.id]?" checked":"")+' aria-label="Select"></td>':'')+
+      '<td>'+fmtD(r.visit_date)+'</td><td><b>'+esc(r.plate)+'</b></td><td>'+(r.trip_no||"–")+'</td><td class="xhide"><span class="tag '+r.direction+'">'+XDIR[r.direction]+'</span></td><td>'+esc(r.exp_type)+'</td>'+
+      '<td class="xamt"><b>'+xNum(r.amount)+'</b> '+r.currency+'</td><td>'+xStTag(r.status)+'</td><td>'+(xFlags(r)||"–")+'</td><td class="xhide">'+esc(r.created_by||"")+'</td>'+
+      (xTab!=="req"?'<td class="xhide">'+(r.paid_on?fmtD(r.paid_on)+(r.pay_ref?" · "+esc(r.pay_ref):""):"–")+'</td>':'')+'</tr>'}).join(""):'<tr><td colspan="11" class="rnote">'+(xTab==="req"?"Nothing waiting for approval.":xTab==="app"?"Nothing waiting for payment.":"No expenses for this filter.")+'</td></tr>';
+  xCount(rows);
+  $("xnote").textContent=all?"Download Excel uses the dates above, in the weekly layout: trucks down the side, expense types across, one sheet per currency.":"";
+  if($("xall"))$("xall").onchange=function(){var on=this.checked;rows.forEach(function(r){if(on)xSel[r.id]=1;else delete xSel[r.id]});xDrawList()};
+}
+function xCount(rows){var sel=rows.filter(function(r){return xSel[r.id]});
+  $("xcnt").textContent=sel.length?sel.length+" selected · "+xMoney(xTot(sel)):rows.length+" expense"+(rows.length===1?"":"s")+" · "+xMoney(xTot(rows))}
+$("xbody").addEventListener("click",function(e){var c=e.target.closest("[data-ck]");if(c){if(c.checked)xSel[c.dataset.ck]=1;else delete xSel[c.dataset.ck];xCount(xRows());return}
+  if(e.target.closest(".ck"))return;var tr=e.target.closest("[data-xid]");if(tr)xOpenLine(+tr.dataset.xid)});
+["xq","xst","xcur","xfrom","xto"].forEach(function(id){$(id).addEventListener(id==="xq"?"input":"change",xDrawList)});
+
+$("xappsel").onclick=async function(){var ids=Object.keys(xSel).map(Number);if(!ids.length){toast("Tick the expenses to approve");return}await xApprove(ids)};
+$("xappclean").onclick=async function(){var ids=xRows().filter(xClean).map(function(r){return r.id});if(!ids.length){toast("No requests without flags");return}
+  var b=this;if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to approve "+ids.length;setTimeout(function(){b.dataset.sure="";b.textContent="Approve all with no flags"},4000);return}
+  b.dataset.sure="";b.textContent="Approve all with no flags";await xApprove(ids)};
+async function xApprove(ids){var r=await sb.rpc("fin_approve",{p_ids:ids});if(r.error){toast(xErr(r.error));return}toast(r.data+" approved");xSel={};await xLoad(true)}
+$("xpaysel").onclick=function(){var ids=Object.keys(xSel).map(Number);if(!ids.length){toast("Tick the expenses you paid");return}xOpenPay(ids)};
+$("xtypesbtn").onclick=function(){xOpenTypes()};
+
+/* visit sheet: one truck, one trip, one direction */
+function xFillLists(){
+  $("xtypelist").innerHTML=xTypes().map(function(t){return '<option value="'+esc(t)+'">'}).join("");
+  $("xplates").innerHTML=trucks.map(function(t){return '<option value="'+esc(t.plate)+'">'}).join("");
+}
+function xOpenVisit(plate,trip,dir,pick){
+  xVisit={plate:plate,trip:trip,dir:dir,pick:pick};xFillLists();
+  $("xpickbox").hidden=!pick;$("x_plate").value=plate;$("x_dir").value=dir;$("x_trip").value=trip||"";
+  ["x_type","x_amt","x_note","x_dup"].forEach(function(id){$(id).value=""});$("x_rec").value="";$("x_cur").value="TZS";$("x_date").value=xToday();
+  var run=finRole==="runner";$("xaddbox").hidden=!run;$("xsave").hidden=!run;$("xcancel").textContent=run?"Close":"Done";
+  xVisitDraw();$("xsheet").hidden=false;setTimeout(function(){(pick?$("x_plate"):run?$("x_type"):$("xcancel")).focus()},50);
+}
+function xVisitDraw(){
+  var v=xVisit,p=$("x_plate").value.trim().toUpperCase();
+  if(v.pick){v.plate=p;v.dir=$("x_dir").value;v.trip=$("x_trip").value?+$("x_trip").value:null}
+  var t=xTruck(v.plate);
+  $("xstitle").textContent=v.plate||"Add other truck";
+  $("xssub").textContent=v.plate?(XDIR[v.dir]+" · trip "+(v.trip||"–")+(t?" · "+(SO[t.step]||{}).l:"")):"Pick the truck, direction and trip";
+  var rows=v.plate?XR.filter(function(r){return xVis(r)===xKey(v.plate,v.trip,v.dir)}):[];
+  $("xlines").innerHTML=rows.length?rows.map(function(r){return '<button type="button" class="xline" data-xid="'+r.id+'"><b>'+esc(r.exp_type)+'</b><span class="a">'+xNum(r.amount)+' '+r.currency+'</span><small>'+fmtD(r.visit_date)+' · '+xStTag(r.status)+(r.reject_reason?' · '+esc(r.reject_reason):'')+(r.dup_reason?' · second charge: '+esc(r.dup_reason):'')+'</small></button>'}).join("")+
+     '<div class="kv" style="font-size:13px;color:var(--mute);padding:2px 4px">This visit: '+xMoney(xTot(rows.filter(function(r){return r.status!=="rejected"})))+'</div>':(v.plate?'<div class="rnote">No expenses for this visit yet.</div>':'');
+  xDupCheck();
+}
+function xDupCheck(){var v=xVisit,ty=$("x_type").value.trim().toUpperCase(),d=!!(ty&&v.plate&&XR.some(function(r){return xVis(r)===xKey(v.plate,v.trip,v.dir)&&r.status!=="rejected"&&r.exp_type.toUpperCase()===ty}));
+  $("xdupw").hidden=$("xdupbox").hidden=!d;return d}
+$("x_type").oninput=xDupCheck;
+["x_plate","x_dir","x_trip"].forEach(function(id){$(id).addEventListener("change",function(){
+  if(id==="x_plate"){var t=xTruck($("x_plate").value.trim().toUpperCase());if(t){$("x_trip").value=t.trip_no||"";var ks=STEPS.map(function(x){return x.k}),ix=ks.indexOf(t.step);$("x_dir").value=ix>=ks.indexOf("offload_mine")&&ix<ks.indexOf("offload_dar")?"in":"out"}}
+  xVisitDraw()})});
+$("xlines").addEventListener("click",function(e){var b=e.target.closest("[data-xid]");if(b)xOpenLine(+b.dataset.xid)});
+function xCloseVisit(){$("xsheet").hidden=true;xVisit=null}
+$("xcancel").onclick=xCloseVisit;$("xsheet").addEventListener("click",function(e){if(e.target===this)xCloseVisit()});
+$("xform").onsubmit=async function(e){e.preventDefault();var v=xVisit;if(!v)return;
+  if(v.pick)xVisitDraw();
+  if(!v.plate){toast("Enter the truck plate");return}
+  var ty=$("x_type").value.trim(),amt=num($("x_amt").value),dup=xDupCheck(),why=$("x_dup").value.trim();
+  if(!ty){toast("Pick the expense type");$("x_type").focus();return}
+  if(!(amt>0)){toast("Enter the amount");$("x_amt").focus();return}
+  if(dup&&!why){toast(XERR.DUPLICATE);$("x_dup").focus();return}
+  var t=xTruck(v.plate),off=!(t&&XSTEP[t.step]===v.dir);
+  var b=$("xsave");b.disabled=true;b.textContent="Sending…";
+  try{var r=await sb.rpc("fin_add",{p_plate:v.plate,p_trip:v.trip,p_dir:v.dir,p_date:$("x_date").value||null,p_type:ty,p_cur:$("x_cur").value,p_amount:amt,p_note:$("x_note").value.trim()||null,p_dup_reason:why||null,p_off:off});
+    if(r.error){toast(xErr(r.error));return}
+    var f=$("x_rec").files[0];if(f)await xUpload(r.data,f);
+    toast(ty.toUpperCase()+" sent for approval");
+    ["x_type","x_amt","x_note","x_dup"].forEach(function(id){$(id).value=""});$("x_rec").value="";
+    if(v.pick){v.pick=false;$("xpickbox").hidden=true}
+    await xLoad(true);xVisitDraw();$("x_type").focus();
+  }finally{b.disabled=false;b.textContent="Send request"}};
+async function xUpload(id,f){
+  if(f.size>5*1024*1024){toast("Receipt is bigger than 5 MB, not attached");return false}
+  var ext=(f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,""),path=id+"/"+Date.now()+"."+ext;
+  var u=await sb.storage.from("tz-receipts").upload(path,f,{contentType:f.type||undefined});
+  if(u.error){toast("Saved, but the receipt didn't upload");return false}
+  var r=await sb.rpc("fin_receipt",{p_id:id,p_path:path});if(r.error){toast(xErr(r.error));return false}return true}
+async function xReceipt(path){var w=window.open("","_blank");var r=await sb.storage.from("tz-receipts").createSignedUrl(path,300);
+  if(r.error||!r.data){if(w)w.close();toast("Couldn't open the receipt");return}if(w)w.location=r.data.signedUrl;else location.href=r.data.signedUrl}
+
+/* line sheet: one expense, actions by role */
+function xF(id,label,html,w){return '<label class="fld'+(w?" w":"")+'">'+label+html+'</label>'}
+function xBtn(id,t,cls){return '<button class="btn '+(cls||"")+'" type="button" id="'+id+'">'+t+'</button>'}
+async function xOpenLine(id){
+  var r=XR.find(function(x){return x.id===id});if(!r)return;xLine=r;xMode="line";
+  var t=xTruck(r.plate);
+  $("xltitle").textContent=r.exp_type;$("xlsub").innerHTML=esc(r.plate)+' · trip '+(r.trip_no||"–")+' · '+XDIR[r.direction]+' · '+xStTag(r.status);
+  $("xldet").innerHTML='<span>Amount</span><div><b>'+xNum(r.amount)+' '+r.currency+'</b></div><span>Date</span><div>'+fmtD(r.visit_date)+'</div>'+
+    '<span>Requested by</span><div>'+esc(r.created_by||"")+' · '+fmtD(dkey(r.created_at))+'</div>'+
+    (r.note?'<span>Note</span><div>'+esc(r.note)+'</div>':'')+(r.dup_reason?'<span>Second charge</span><div>'+esc(r.dup_reason)+'</div>':'')+
+    (r.off_board?'<span>Flag</span><div>Fleet Status did not show this truck at Tunduma ('+esc(t?(SO[t.step]||{}).l||t.step:"truck not found")+')</div>':'')+
+    (r.approved_by?'<span>Approved by</span><div>'+esc(r.approved_by)+' · '+fmtD(dkey(r.approved_at))+'</div>':'')+
+    (r.reject_reason?'<span>Rejected</span><div>'+esc(r.rejected_by||"")+': '+esc(r.reject_reason)+'</div>':'')+
+    (r.paid_on?'<span>Paid</span><div>'+fmtD(r.paid_on)+(r.pay_ref?' · ref '+esc(r.pay_ref):'')+' · '+esc(r.paid_by||"")+'</div>':'')+
+    (r.receipt?'<span>Receipt</span><div><button type="button" class="btn sm ghost" id="xlrec">Open receipt</button></div>':'');
+  var box="",acts=xBtn("xlclose","Close","ghost");
+  if(finRole==="runner"&&(r.status==="requested"||r.status==="rejected")){
+    box=xF("","Expense type",'<input id="xl_type" list="xtypelist" value="'+esc(r.exp_type)+'">')+xF("","Date",'<input id="xl_date" type="date" value="'+r.visit_date+'">')+
+      xF("","Currency",'<select id="xl_cur">'+["TZS","ZMW","USD"].map(function(c){return '<option'+(c===r.currency?" selected":"")+'>'+c+'</option>'}).join("")+'</select>')+
+      xF("","Amount",'<input id="xl_amt" type="number" step="any" inputmode="decimal" value="'+r.amount+'">')+
+      xF("","Why charged again (only for a second charge)",'<input id="xl_dup" value="'+esc(r.dup_reason||"")+'">',1)+xF("","Note",'<input id="xl_note" value="'+esc(r.note||"")+'">',1)+
+      (r.receipt?"":xF("","Add receipt photo",'<input id="xl_rec" type="file" accept="image/*,application/pdf">',1));
+    acts=xBtn("xlclose","Close","ghost")+xBtn("xlcxl","Cancel entry","ghost")+xBtn("xlsave",r.status==="rejected"?"Fix and send again":"Save changes");
+  }else if(finRole==="approver"&&(r.status==="requested"||r.status==="approved")){
+    box=xF("","Change amount to",'<input id="xl_amt" type="number" step="any" inputmode="decimal" value="'+r.amount+'">')+xF("","Reason (for reject or amount change)",'<input id="xl_why">');
+    acts=xBtn("xlclose","Close","ghost")+xBtn("xlrej","Reject","warn")+xBtn("xlamd","Change amount","ghost")+(r.status==="requested"?xBtn("xlapp","Approve"):"");
+  }else if(finRole==="payer"&&r.status==="approved"){
+    box=xF("","Paid on",'<input id="xl_on" type="date" value="'+xToday()+'">')+xF("","Payment reference",'<input id="xl_ref" placeholder="e.g. M-Pesa or bank ref">');
+    acts=xBtn("xlclose","Close","ghost")+xBtn("xlpay","Mark paid");
+  }else if(finRole==="payer"&&r.status==="paid"){acts=xBtn("xlclose","Close","ghost")+xBtn("xlunpay","Undo payment","ghost")}
+  $("xlbox").innerHTML=box;$("xlacts").innerHTML=acts;$("xlhist").innerHTML="";$("xlsheet").hidden=false;
+  var h=await sb.from("tz_expense_log").select("*").eq("expense_id",id).order("at");
+  if(h.data&&xLine===r)$("xlhist").innerHTML='<b style="color:var(--fg)">History</b>'+h.data.map(function(x){var d=x.detail||{},s="";
+    if(x.action==="amount changed")s=" · "+xNum(d.old)+" → "+xNum(d.new)+(d.reason?" ("+esc(d.reason)+")":"");else if(x.action==="rejected"&&d.reason)s=" · "+esc(d.reason);
+    else if((x.action==="edited"||x.action==="resubmitted")&&d.old&&d.new)s=" · "+esc(d.old.type)+" "+xNum(d.old.amount)+" "+d.old.currency+" → "+esc(d.new.type)+" "+xNum(d.new.amount)+" "+d.new.currency;
+    else if(x.action==="paid"&&d.ref)s=" · ref "+esc(d.ref);
+    return '<div>'+fmtD(dkey(x.at))+' '+new Date(x.at).toLocaleTimeString("en-GB",{timeZone:TZ,hour:"2-digit",minute:"2-digit"})+' · <b>'+esc(x.by_name||"")+'</b> '+esc(x.action)+s+'</div>'}).join("");
+}
+function xCloseLine(){$("xlsheet").hidden=true;xLine=null;xMode=""}
+$("xlsheet").addEventListener("click",function(e){if(e.target===this)xCloseLine()});
+async function xAfter(r,msg){if(r.error){toast(xErr(r.error));return false}toast(msg);xCloseLine();await xLoad(true);if(xVisit)xVisitDraw();return true}
+$("xlacts").addEventListener("click",async function(e){var b=e.target.closest("button");if(!b)return;var id=b.id,r=xLine;
+  if(id==="xlclose"){xCloseLine();return}
+  if(xMode==="pay"){if(id==="xlpaym"){var on=$("xl_on").value||null,ref=$("xl_ref").value.trim()||null;b.disabled=true;var p=await sb.rpc("fin_pay",{p_ids:xLine.ids,p_on:on,p_ref:ref});b.disabled=false;
+      if(await xAfter(p,(p.data||0)+" marked paid"))xSel={}}return}
+  if(xMode==="types"){if(id==="xltadd"){var n=$("xl_tn").value.trim();if(!n){toast("Type the new expense name");return}var a=await sb.rpc("fin_type_save",{p_name:n,p_active:true});if(a.error){toast(xErr(a.error));return}toast("Added");await xLoad(true);xOpenTypes()}return}
+  b.disabled=true;
+  try{
+  if(id==="xlsave"){var ty=$("xl_type").value.trim(),amt=num($("xl_amt").value);if(!ty||!(amt>0)){toast("Check the type and amount");return}
+    var s=await sb.rpc("fin_edit",{p_id:r.id,p_date:$("xl_date").value||null,p_type:ty,p_cur:$("xl_cur").value,p_amount:amt,p_note:$("xl_note").value.trim()||null,p_dup_reason:$("xl_dup").value.trim()||null});
+    if(!s.error&&$("xl_rec")&&$("xl_rec").files[0])await xUpload(r.id,$("xl_rec").files[0]);
+    await xAfter(s,r.status==="rejected"?"Sent again for approval":"Saved")}
+  else if(id==="xlcxl"){if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to cancel it";return}await xAfter(await sb.rpc("fin_cancel",{p_id:r.id}),"Entry cancelled")}
+  else if(id==="xlapp")await xAfter(await sb.rpc("fin_approve",{p_ids:[r.id]}),"Approved");
+  else if(id==="xlrej"){var w=$("xl_why").value.trim();if(!w){toast("Write the reason for rejecting");$("xl_why").focus();return}await xAfter(await sb.rpc("fin_reject",{p_id:r.id,p_reason:w}),"Rejected. Agnes will see the reason")}
+  else if(id==="xlamd"){var w2=$("xl_why").value.trim(),a2=num($("xl_amt").value);if(!(a2>0)){toast(XERR.BAD_AMOUNT);return}if(a2===Number(r.amount)){toast("The amount is the same");return}if(!w2){toast("Write why the amount changed");$("xl_why").focus();return}
+    await xAfter(await sb.rpc("fin_amend",{p_id:r.id,p_amount:a2,p_reason:w2}),"Amount changed")}
+  else if(id==="xlpay")await xAfter(await sb.rpc("fin_pay",{p_ids:[r.id],p_on:$("xl_on").value||null,p_ref:$("xl_ref").value.trim()||null}),"Marked paid");
+  else if(id==="xlunpay"){if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to undo";return}await xAfter(await sb.rpc("fin_unpay",{p_id:r.id}),"Payment undone. Back in To pay")}
+  }finally{b.disabled=false}});
+$("xldet").addEventListener("click",function(e){if(e.target.id==="xlrec"&&xLine&&xLine.receipt)xReceipt(xLine.receipt)});
+$("xlform").onsubmit=function(e){e.preventDefault()};
+function xOpenPay(ids){var rows=XR.filter(function(r){return ids.indexOf(r.id)>=0});xLine={ids:ids};xMode="pay";
+  $("xltitle").textContent="Mark paid";$("xlsub").textContent=rows.length+" expense"+(rows.length===1?"":"s")+" · "+xMoney(xTot(rows));
+  $("xldet").innerHTML=rows.slice(0,12).map(function(r){return '<span>'+esc(r.plate)+'</span><div>'+esc(r.exp_type)+' · '+xNum(r.amount)+' '+r.currency+'</div>'}).join("")+(rows.length>12?'<span></span><div>and '+(rows.length-12)+' more</div>':'');
+  $("xlbox").innerHTML=xF("","Paid on",'<input id="xl_on" type="date" value="'+xToday()+'">')+xF("","Payment reference",'<input id="xl_ref" placeholder="e.g. M-Pesa or bank ref">');
+  $("xlacts").innerHTML=xBtn("xlclose","Close","ghost")+xBtn("xlpaym","Mark "+rows.length+" paid");$("xlhist").innerHTML="";$("xlsheet").hidden=false}
+function xOpenTypes(){xMode="types";xLine={};
+  $("xltitle").textContent="Expense types";$("xlsub").textContent="Untick a type to hide it from the list. Old expenses keep their type.";$("xldet").innerHTML="";
+  $("xlbox").innerHTML='<div class="w" style="grid-column:1/-1"><div class="xtypes">'+XT.map(function(t){return '<label><input type="checkbox" data-tn="'+esc(t.name)+'"'+(t.active?" checked":"")+'> '+esc(t.name)+'</label>'}).join("")+'</div></div>'+
+    xF("","New expense type",'<input id="xl_tn" placeholder="e.g. COUNCIL CHINSALI">',1);
+  $("xlacts").innerHTML=xBtn("xlclose","Done","ghost")+xBtn("xltadd","Add type");$("xlhist").innerHTML="";$("xlsheet").hidden=false}
+$("xlbox").addEventListener("change",async function(e){var c=e.target.closest("[data-tn]");if(!c||xMode!=="types")return;
+  var r=await sb.rpc("fin_type_save",{p_name:c.dataset.tn,p_active:c.checked});if(r.error){toast(xErr(r.error));c.checked=!c.checked;return}
+  var t=XT.find(function(x){return x.name===c.dataset.tn});if(t)t.active=c.checked;toast(c.checked?"Shown in the list":"Hidden from the list")});
+document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;if(!$("xlsheet").hidden)xCloseLine();else if(!$("xsheet").hidden)xCloseVisit()});
+
+/* Excel in the weekly sheet layout */
+$("xxl").onclick=async function(){
+  var f=$("xfrom").value,to=$("xto").value,rows=xRows().filter(function(r){return r.status!=="rejected"});
+  if(!rows.length){toast("No expenses for these dates");return}
+  try{var X=await needXLSX(),wb=X.utils.book_new(),ord={};XT.forEach(function(t,i){ord[t.name]=i});
+    ["TZS","ZMW","USD"].forEach(function(c){var cr=rows.filter(function(r){return r.currency===c});if(!cr.length)return;
+      var types=[];cr.forEach(function(r){if(types.indexOf(r.exp_type)<0)types.push(r.exp_type)});
+      types.sort(function(a,b){var x=ord[a]!=null?ord[a]:999,y=ord[b]!=null?ord[b]:999;return x-y||(a<b?-1:1)});
+      var plates=[];cr.forEach(function(r){if(plates.indexOf(r.plate)<0)plates.push(r.plate)});
+      plates.sort(function(a,b){var sa=a.slice(-3)+a,sb2=b.slice(-3)+b;return sa<sb2?-1:1});
+      var aoa=[["TRUCKS NO"].concat(types,["TOTAL"])],col=types.map(function(){return 0}),g=0;
+      plates.forEach(function(p){var line=[p],tot=0;types.forEach(function(ty,i){var v=cr.filter(function(r){return r.plate===p&&r.exp_type===ty}).reduce(function(a,r){return a+Number(r.amount)},0);line.push(v||null);tot+=v;col[i]+=v});line.push(tot);g+=tot;aoa.push(line)});
+      aoa.push(["TOTAL"].concat(col,[g]));
+      var ws=X.utils.aoa_to_sheet(aoa);ws["!cols"]=aoa[0].map(function(h){return {wch:Math.max(10,String(h).length+2)}});ws["!freeze"]={xSplit:1,ySplit:1};
+      X.utils.book_append_sheet(wb,ws,c)});
+    var L=[["Date","Truck","Trip","Direction","Expense type","Currency","Amount","Status","Requested by","Approved by","Paid on","Payment ref","Note","Second charge reason"]];
+    rows.forEach(function(r){L.push([fmtD(r.visit_date),r.plate,r.trip_no||"",r.direction==="out"?"Outbound":"Inbound",r.exp_type,r.currency,Number(r.amount),(XST[r.status]||[r.status])[0],r.created_by||"",r.approved_by||"",r.paid_on?fmtD(r.paid_on):"",r.pay_ref||"",r.note||"",r.dup_reason||""])});
+    var lw=X.utils.aoa_to_sheet(L);lw["!cols"]=L[0].map(function(h,i){return {wch:Math.min(40,Math.max.apply(null,L.map(function(r){return String(r[i]==null?"":r[i]).length}))+2)}});
+    X.utils.book_append_sheet(wb,lw,"All lines");
+    var nm="Tunduma expenses "+(f?fmtD(f).replace(/\//g,"-"):"start")+" to "+(to?fmtD(to).replace(/\//g,"-"):fmtD(xToday()).replace(/\//g,"-"));
+    X.writeFile(wb,nm+".xlsx");
+  }catch(e){toast("Couldn't make the Excel file")}};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",tzx:"Tunduma expenses",trucks:"All trucks",users:"Users"};
 function show(v){
   if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
-  ["dash","detail","reports","target","trips","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
+  if(v==="tzx"&&!finRole)v="dash";
+  if(finRole==="runner")v="tzx";
+  if(typeof xCloseLine==="function"){if(!$("xlsheet").hidden)xCloseLine();if(!$("xsheet").hidden)xCloseVisit()}
+  ["dash","detail","reports","target","trips","tzx","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();if(v==="tzx")xLoad(false);
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","tzx","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
-  var r=await sb.from("trucks").select("*");
+  var r=finRole==="runner"?await sb.rpc("fin_trucks"):await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
   if(!r.data.length&&!canWrite){$("state").classList.add("off");$("stxt").textContent="No access";return false}
-  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("trips").hidden)drawTrips(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
+  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("trips").hidden)drawTrips(false);if(!$("tzx").hidden)xLoad(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
 }
 async function start(session){
   me=session.user;myName=me.email;canWrite=false;
-  var u=await sb.from("fleet_users").select("name,can_edit").eq("email",me.email.toLowerCase()).maybeSingle();
-  if(!u.data)u=await sb.from("fleet_users").select("name,can_edit").maybeSingle();
-  if(u.data){myName=u.data.name||me.email;canWrite=!!u.data.can_edit}
-  gate(false);$("mbtn").hidden=false;$("mtrucks").hidden=!canWrite;$("musers").hidden=!canWrite;
+  finRole=null;XR=[];xAt=0;
+  var u=await sb.from("fleet_users").select("name,can_edit,fin_role").eq("email",me.email.toLowerCase()).maybeSingle();
+  if(!u.data)u=await sb.from("fleet_users").select("name,can_edit,fin_role").maybeSingle();
+  if(u.data){myName=u.data.name||me.email;canWrite=!!u.data.can_edit;finRole=u.data.fin_role||null}
+  xTab=finRole==="approver"?"req":finRole==="payer"?"app":"now";$("xfrom").value=xAdd(xToday(),-6);$("xto").value=xToday();
+  gate(false);$("mbtn").hidden=false;$("mtrucks").hidden=!canWrite;$("musers").hidden=!canWrite;$("mtzx").hidden=!finRole;
+  document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(finRole==="runner")b.hidden=b.dataset.view!=="tzx";else if(!/^(trucks|users|tzx)$/.test(b.dataset.view))b.hidden=false});
   var h=(location.hash||"").slice(1);show(TITLES[h]?h:"dash");
   var ok=await pull();
   if(!ok&&!u.data)toast("This account has no access to the board yet");
@@ -1261,7 +1647,7 @@ $("lform").onsubmit=async function(e){
   if(r.error){$("lerr").textContent="Wrong email or password";return}
   $("lpass").value="";start(r.data.session);
 };
-$("mout").onclick=async function(){setM(false);if(chan){sb.removeChannel(chan);chan=null}await sb.auth.signOut();me=null;trucks=[];rebuild();$("state").classList.add("off");$("stxt").textContent="Signed out";gate(true)};
+$("mout").onclick=async function(){setM(false);if(chan){sb.removeChannel(chan);chan=null}await sb.auth.signOut();me=null;finRole=null;XR=[];$("mtzx").hidden=true;trucks=[];rebuild();$("state").classList.add("off");$("stxt").textContent="Signed out";gate(true)};
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&me)pull()});
 setInterval(function(){if(me)pull()},120000);
 if("serviceWorker" in navigator&&location.protocol==="https:")window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
