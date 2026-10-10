@@ -303,6 +303,41 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
 .prow .t{font-size:12px;color:var(--mute);white-space:nowrap}
 .pnone{font-size:13px;color:var(--mute);padding:10px 4px;border-top:1px solid var(--card-line)}
 @media (max-width:600px){.prow{grid-template-columns:auto minmax(0,1fr) auto;}.prow .s{grid-column:1/4;grid-row:2}.prow .t{display:none}}
+/* trips page */
+.tpgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:14px}
+.tpc{font:inherit;text-align:left;color:var(--fg);background:var(--card-bg);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);border:1px solid var(--card-line);box-shadow:var(--card-shadow);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:pointer;min-width:0}
+.tpc:hover{border-color:var(--fg)}
+.tpc .tn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tpc .tn b{font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tpc .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.tpc .kv span:first-child{color:var(--mute);white-space:nowrap}
+.tpc .kv span:last-child{text-align:right;min-width:0;overflow-wrap:anywhere}
+.tpc .val{border-top:1px solid var(--card-line);margin-top:4px;padding-top:6px}
+.tpbar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--track);margin:4px 0 2px}
+.tpbar i{display:block;height:100%}
+.tpbar .g{background:var(--c3,#8A8E95)}.tpbar .m{background:rgba(255,159,10,.75)}.tpbar .r{background:rgba(52,199,89,.8)}.tpbar .d{background:var(--fg)}
+.tag.open{background:rgba(10,132,255,.18)}
+.tphead{margin:14px 0 14px;display:grid;gap:10px}
+.tphead h2{margin:0}
+.tphead h2 .tag{font-size:13px;vertical-align:middle;letter-spacing:0}
+.tphead .tlegs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.tphead .tleg{background:var(--card-bg);border:1px solid var(--card-line);border-radius:18px;padding:12px 14px;font-size:14px}
+.tphead .tleg b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);margin-bottom:4px}
+.tpdots{display:flex;gap:4px;align-items:center}
+.tpdots i{width:9px;height:9px;border-radius:50%;background:var(--track);border:1px solid var(--card-line)}
+.tpdots i.on{background:rgba(52,199,89,.9);border-color:transparent}
+.tpdots i.now{background:#FF9F0A;border-color:transparent;box-shadow:0 0 0 3px rgba(255,159,10,.25)}
+tr.moved td{opacity:.55}
+.tsin{width:min(720px,100%)}
+.tsleg{grid-column:1/-1;margin-top:8px;padding-top:10px;border-top:1px solid var(--card-line);font-size:14px}
+.tsleg span{color:var(--mute);font-size:12px}
+.tsbar{margin-top:6px}
+.tsbar .chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.tslist{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:280px;overflow:auto;margin-top:8px;padding:2px}
+.tslist label{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid var(--card-line);border-radius:12px;font-size:13px;cursor:pointer;background:var(--surface)}
+.tslist label:has(input:checked){border-color:var(--fg)}
+.tslist small{display:block;color:var(--mute);font-size:11px}
+.tslist .none{color:var(--mute);font-size:13px;padding:6px}
 </style>
 </head>
 <body>
@@ -329,6 +364,7 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
   <button type="button" data-view="detail">Truck details</button>
   <button type="button" data-view="reports">Reports</button>
   <button type="button" data-view="target">Target</button>
+  <button type="button" data-view="trips">Trips</button>
   <button type="button" data-view="trucks" id="mtrucks" hidden>All trucks (edit)</button>
   <button type="button" data-view="users" id="musers" hidden>Users</button>
   <hr>
@@ -431,6 +467,36 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
   <div class="tgsave"><button class="btn sm" id="tgsave" type="button" hidden>Save standard days</button></div>
 </main>
 
+<main class="page" id="trips" hidden>
+  <section id="tplist">
+  <h2>Trips</h2>
+  <p class="lead tlead">One trip is a round trip: Dar &rarr; mine &rarr; Dar. It starts when the first truck leaves Dar and ends when the last truck offloads in Dar. Tap a trip to see its trucks.</p>
+  <div class="bar2">
+    <input id="tpq" type="search" placeholder="Search trip no., plate, job, mine…" aria-label="Search trips">
+    <select id="tpc" aria-label="Client"></select>
+    <select id="tps" aria-label="Trip status"><option value="">All trips</option><option value="open">Ongoing</option><option value="closed">Finished</option></select>
+    <select id="tpm" aria-label="Month started"></select>
+    <button class="btn sm" id="tpnew" type="button" hidden>New trip (dispatch)</button>
+    <button class="btn sm ghost" id="tpxl" type="button">Download Excel</button>
+    <span class="cnt" id="tpcnt"></span>
+  </div>
+  <div class="rsum" id="tpsum" style="margin-top:12px"></div>
+  <div class="tpgrid" id="tpgrid"></div>
+  </section>
+  <section id="tpdet" hidden>
+    <button class="btn sm ghost" id="tpback" type="button">&larr; All trips</button>
+    <div class="tphead" id="tphead"></div>
+    <div class="bar2">
+      <button class="btn sm" id="tpedit" type="button" hidden>Edit trip</button>
+      <button class="btn sm" id="tpadd" type="button" hidden>Add trucks</button>
+      <button class="btn sm ghost" id="tpdxl" type="button">Download Excel</button>
+      <span class="cnt" id="tpdcnt"></span>
+    </div>
+    <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Truck</th><th>Driver</th><th>Trailer</th><th>Leg</th><th>Status</th><th>Location</th><th>Days in status</th><th>Days on trip</th><th>Progress</th></tr></thead><tbody id="tpbody"></tbody></table></div>
+    <p class="rnote">Progress: Dar &middot; Tunduma/Nakonde &middot; Congo border &middot; offload at mine &middot; load at mine &middot; Congo border &middot; Nakonde/Tunduma &middot; offload in Dar. Tap a truck to change its status, or type another trip number there to move it.</p>
+  </section>
+</main>
+
 <main class="page" id="users" hidden>
   <h2>Users</h2>
   <p class="lead">People on this list can sign in and see the boards. Only accounts with "Can edit" can change trucks. Each person also needs a login: create it in Supabase → Authentication → Users with the same email.</p>
@@ -477,6 +543,42 @@ body.view-dash .card:hover{box-shadow:var(--card-shadow),0 0 0 2px var(--card-li
     <datalist id="routes"></datalist>
     <div class="acts"><button class="btn ghost" id="ecancel" type="button">Close</button><button class="btn" id="esave" type="submit">Save</button></div>
     <div class="hist" id="ehist"></div>
+  </form>
+</div>
+
+<div class="sheet" id="tsheet" hidden role="dialog" aria-modal="true" aria-labelledby="tstitle">
+  <form class="sheet-in tsin" id="tsform">
+    <h3 id="tstitle">New trip</h3>
+    <div class="sub2" id="tssub"></div>
+    <div class="fgrid" id="tsfields">
+      <label class="fld">Trip number<input id="ts_no" type="number" min="1" inputmode="numeric" required></label>
+      <label class="fld">Dispatch date<input id="ts_date" type="date"></label>
+      <div class="tsleg w"><b>Going leg</b> <span>Dar &rarr; mine</span></div>
+      <label class="fld">Client<select id="ts_gcl"></select></label>
+      <label class="fld">Job number<input id="ts_gjob" placeholder="e.g. JOB673729"></label>
+      <label class="fld">Loading point<input id="ts_gfrom" list="tsplaces"></label>
+      <label class="fld">Offloading point<input id="ts_gto" list="tsplaces"></label>
+      <label class="fld tsr">Rate per ton (USD)<input id="ts_grate" type="number" step="any" inputmode="decimal"></label>
+      <label class="fld tsr">Tons per truck<input id="ts_gtons" type="number" step="any" inputmode="decimal"></label>
+      <div class="tsleg w ret"><b>Return leg</b> <span>mine &rarr; Dar &middot; fill when the return booking comes</span></div>
+      <label class="fld">Client<select id="ts_rcl"></select></label>
+      <label class="fld">Job number<input id="ts_rjob" placeholder="e.g. JOB708803"></label>
+      <label class="fld">Loading point<input id="ts_rfrom" list="tsplaces"></label>
+      <label class="fld">Offloading point<input id="ts_rto" list="tsplaces"></label>
+      <label class="fld tsr">Rate per ton (USD)<input id="ts_rrate" type="number" step="any" inputmode="decimal"></label>
+      <label class="fld tsr">Tons per truck<input id="ts_rtons" type="number" step="any" inputmode="decimal"></label>
+      <label class="fld w">Notes<textarea id="ts_notes"></textarea></label>
+    </div>
+    <div id="tspick">
+      <div class="tsleg w"><b id="tspickt">Trucks to dispatch</b> <span id="tspicks"></span></div>
+      <div class="fgrid">
+        <label class="fld w" id="tsstepbox">Status after saving<select id="ts_step"><option value="loaded_dar">Loaded · Dar (not yet left)</option><option value="out_tr_tunduma" selected>In transit to Tunduma</option></select></label>
+      </div>
+      <div class="bar2 tsbar"><input id="ts_q" type="search" placeholder="Search plate…" aria-label="Search trucks"><label class="chk"><input id="ts_all" type="checkbox"> Show all trucks</label></div>
+      <div class="tslist" id="tslist"></div>
+    </div>
+    <datalist id="tsplaces"></datalist>
+    <div class="acts"><button class="btn ghost" id="tscancel" type="button">Close</button><button class="btn" id="tssave" type="submit">Save</button></div>
   </form>
 </div>
 
@@ -706,7 +808,7 @@ $("e_step").addEventListener("change",function(){
   if(s.mine){$("eminebox").hidden=false;if($("e_mine").value)$("e_location").value=$("e_mine").value}
   /* round trip: Dar -> mine -> Dar = one trip; the next trip starts when an offloaded truck in Dar is set to wait/load in Dar */
   var base=parseInt($("e_trip").dataset.base,10)||1;
-  $("e_trip").value=base+((was==="offload_dar"&&s.g==="Dar es Salaam"&&this.value!=="offload_dar")?1:0);
+  $("e_trip").value=(was==="offload_dar"&&s.g==="Dar es Salaam"&&this.value!=="offload_dar")?nextTripNo():base;
   syncMine();
 });
 $("e_mine").addEventListener("change",function(){var s=SO[$("e_step").value]||{};if(s.mine&&this.value)$("e_location").value=this.value});
@@ -947,32 +1049,196 @@ $("tgxl").onclick=function(){if(!tgRows.length){toast("Nothing to download");ret
   var rows=[["Target month","At yard from","At yard to","Truck","Client","Status","Location","Days in status","Standard days","Days to yard","Expected at yard","Delayed","Driver"]].concat(tgRows.map(function(x){return [mName(tgRows._mk,1),fmtD(W.from),fmtD(W.to),x.plate,x.client,(SO[x.step]||{}).l||x.step,x.location,x.inDays,x.std,x.left,fmtD(x.eta),x.late?"Yes":"",x.driver]}));
   saveSheet("Orbis Target "+mName(tgRows._mk,1),"Target",rows)};
 
+/* ----- trips: one trip = round trip Dar -> mine -> Dar, ends when the last truck offloads in Dar ----- */
+var TRIPS={},RATES={},tripsAt=0,tpCur=null,tpList=[],tpTrip=null,tsMode="new";
+var MS=[["wait_dar","load_dar","loaded_dar","out_tr_tunduma"],["out_tunduma","out_nakonde","out_tr_kasumbalesa","out_tr_sakania"],["out_kasumbalesa","out_sakania","out_tr_whisky","out_tr_mine"],["offload_mine"],["wait_mine","load_mine","loaded_mine"],["in_tr_whisky","in_tr_kasumbalesa","in_tr_sakania","in_kasumbalesa","in_sakania"],["in_tr_nakonde","in_nakonde","in_tunduma","in_tr_dar"],["offload_dar","at_yard"]];
+function msOf(step){for(var i=0;i<MS.length;i++)if(MS[i].indexOf(step)>=0)return i;return -1}
+function legOf(m,left){return m<=0?(left?"Going":"In Dar"):m<=2?"Going":m===3?"At mine · offloading":m===4?"At mine · loading":m<=6?"Return":"Finished"}
+function money(v){return "$ "+Math.round(v).toLocaleString("en-US")}
+function num(v){return v===""||v==null?null:Number(v)}
+async function loadTrips(force){
+  if(!force&&Date.now()-tripsAt<60000)return;
+  var r=await sb.from("trips").select("*");if(r.error){toast("Couldn't load trips");return}
+  TRIPS={};r.data.forEach(function(x){TRIPS[x.trip_no]=x});RATES={};
+  if(canWrite){var q=await sb.from("trip_rates").select("*");if(!q.error)q.data.forEach(function(x){RATES[x.trip_no]=x})}
+  tripsAt=Date.now()}
+function nextTripNo(){var all=Object.keys(TRIPS).map(Number).concat(trucks.map(function(t){return +t.trip_no||1}));
+  var s=all.filter(function(n){return n>=26000&&n<27000});return s.length?Math.max.apply(null,s)+1:26101}
+async function tripModel(force){
+  await loadTrips(force);var logs=await loadLogs(force),T={},today=todayKey();
+  function get(n){n=+n||1;return T[n]=T[n]||{no:n,plates:{}}}
+  Object.keys(TRIPS).forEach(get);
+  logs.forEach(function(h){var x=get(h.trip_no);(x.plates[h.plate]=x.plates[h.plate]||[]).push(h)});
+  trucks.forEach(function(t){var x=get(t.trip_no);x.plates[t.plate]=x.plates[t.plate]||[]});
+  return Object.keys(T).map(function(k){var x=T[k];x.info=TRIPS[x.no]||{};x.rate=RATES[x.no]||null;
+    x.trucks=Object.keys(x.plates).map(function(p){var rows=x.plates[p],cur=trucks.find(function(t){return t.plate===p})||null,on=!!cur&&(+cur.trip_no||1)===x.no;
+      var left=false,fin=null,maxM=-1,drv="",trl="";
+      rows.forEach(function(h){var m=msOf(h.step);if((m>=1&&m<=6)||h.step==="out_tr_tunduma")left=true;if(m>maxM&&m<7)maxM=m;if(m===7&&left&&!fin)fin=dkey(h.changed_at);if(h.driver)drv=h.driver;if(h.trailer)trl=h.trailer});
+      var start=rows.length?dkey(rows[0].changed_at):(on&&cur.stage_since)||null,cm=on?msOf(cur.step):maxM;
+      if(on&&cur.stage_since&&(!start||cur.stage_since<start)&&cm<=0)start=cur.stage_since;
+      if(!fin&&on&&cm===7){var f7=rows.find(function(h){return msOf(h.step)===7});fin=f7?dkey(f7.changed_at):(cur.stage_since||null)}
+      var state=fin?"done":(on?"active":"moved");
+      return {plate:p,cur:cur,on:on,state:state,start:start,fin:fin,left:left||cm>=1||(on&&cur.step==="out_tr_tunduma"),ms:state==="done"?8:cm,
+        days:start?Math.max(0,dayDiff(start,fin||today)):0,driver:(on&&cur.driver)||drv,trailer:(on&&cur.trailer)||trl,
+        late:state==="active"&&lim(cur)&&daysOf(cur)>lim(cur)}});
+    var live=x.trucks.filter(function(t){return t.state!=="moved"});
+    x.n=live.length;x.done=live.filter(function(t){return t.state==="done"}).length;x.active=x.n-x.done;x.moved=x.trucks.length-x.n;
+    x.going=live.filter(function(t){return t.state==="active"&&t.ms<=2}).length;
+    x.mine=live.filter(function(t){return t.state==="active"&&(t.ms===3||t.ms===4)}).length;
+    x.ret=live.filter(function(t){return t.state==="active"&&t.ms>=5}).length;
+    var st=live.map(function(t){return t.start}).filter(Boolean).sort();
+    x.start=x.info.dispatch_date||st[0]||null;x.closed=x.n>0&&x.done===x.n;
+    x.end=x.closed?live.map(function(t){return t.fin}).sort().pop():null;
+    x.days=x.start?Math.max(0,dayDiff(x.start,x.end||today)):0;
+    var ds=live.map(function(t){return t.days});x.avg=ds.length?ds.reduce(function(a,b){return a+b},0)/ds.length:0;x.slow=ds.length?Math.max.apply(null,ds):0;
+    x.late=live.some(function(t){return t.late});
+    var cc={};live.forEach(function(t){if(t.cur&&t.on)cc[cli(t.cur)]=(cc[cli(t.cur)]||0)+1});
+    x.client=x.info.go_client||Object.keys(cc).sort(function(a,b){return cc[b]-cc[a]})[0]||"";
+    if(x.rate){var r=x.rate;x.goVal=(+r.go_rate||0)*(+r.go_tons||0)*x.n;x.retVal=(+r.ret_rate||0)*(+r.ret_tons||0)*x.n;x.val=x.goVal+x.retVal}
+    return x})}
+function legTxt(c,f,t,j){var a=[c||"—"];if(f||t)a.push((f?f+" → ":"→ ")+(t||"?"));if(j)a.push(j);return a.join(" · ")}
+function tpMatch(x,q){if(!q)return true;q=q.toLowerCase();var i=x.info;
+  return String(x.no).indexOf(q)===0||[x.client,i.go_client,i.ret_client,i.go_job,i.ret_job,i.go_from,i.go_to,i.ret_from,i.ret_to,i.notes].join(" ").toLowerCase().indexOf(q)>=0||x.trucks.some(function(t){return t.plate.toLowerCase().indexOf(q.replace(/\s/g,""))>=0||(t.driver||"").toLowerCase().indexOf(q)>=0})}
+function tpTag(x){return x.n===0?'<span class="tag">No trucks</span>':x.closed?'<span class="tag ok">Finished</span>':'<span class="tag open">Ongoing</span>'+(x.late?' <span class="tag late">Delayed</span>':'')}
+async function drawTrips(force){
+  if($("trips").hidden)return;
+  var all=await tripModel(force);
+  var cv=$("tpc").value;$("tpc").innerHTML=opt("","All clients")+CLIENTS.map(function(c){return opt(c,c,c===cv)}).join("");
+  var mv=$("tpm").value,ms={};all.forEach(function(x){if(x.start)ms[x.start.slice(0,7)]=1});
+  $("tpm").innerHTML=opt("","Any month")+Object.keys(ms).sort().reverse().map(function(m){return opt(m,"Started "+mName(m,1),m===mv)}).join("");
+  var q=$("tpq").value.trim(),c=$("tpc").value,s=$("tps").value,m=$("tpm").value;
+  var list=all.filter(function(x){return x.no!==1&&(!c||x.client===c||x.info.go_client===c||x.info.ret_client===c)&&(!s||(s==="closed"?x.closed:!x.closed))&&(!m||(x.start||"").slice(0,7)===m)&&tpMatch(x,q)})
+    .sort(function(a,b){return (a.closed-b.closed)||(b.no-a.no)});
+  tpList=list;
+  var open=list.filter(function(x){return !x.closed&&x.n}),sum=[[open.length,"Ongoing trips"],[list.filter(function(x){return x.closed}).length,"Finished trips"],[open.reduce(function(a,x){return a+x.active},0),"Trucks on the road"],[open.filter(function(x){return x.late}).length,"Trips with delays"]];
+  if(canWrite)sum.push([money(open.reduce(function(a,x){return a+(x.val||0)},0)),"Value of ongoing trips"]);
+  $("tpsum").innerHTML=sum.map(function(v){return '<button type="button" tabindex="-1" class="'+(v[0]?"":"zero")+'"><b>'+v[0]+'</b><span>'+esc(v[1])+'</span></button>'}).join("");
+  $("tpcnt").textContent=list.length+" trip(s)";
+  $("tpgrid").innerHTML=list.length?list.map(function(x){var i=x.info,w=function(n){return x.n?(n/x.n*100).toFixed(1)+"%":"0"};
+    return '<button type="button" class="tpc" data-n="'+x.no+'"><div class="tn"><b>'+x.no+'</b>'+tpTag(x)+'</div>'+
+      '<div class="kv"><span>Going</span><span>'+esc(legTxt(i.go_client||x.client,i.go_from,i.go_to,i.go_job))+'</span></div>'+
+      '<div class="kv"><span>Return</span><span>'+(i.ret_client||i.ret_job||i.ret_from?esc(legTxt(i.ret_client,i.ret_from,i.ret_to,i.ret_job)):'<span class="rnote">Not booked yet</span>')+'</span></div>'+
+      '<div class="tpbar" aria-hidden="true"><i class="g" style="width:'+w(x.going)+'"></i><i class="m" style="width:'+w(x.mine)+'"></i><i class="r" style="width:'+w(x.ret)+'"></i><i class="d" style="width:'+w(x.done)+'"></i></div>'+
+      '<div class="kv"><span>Trucks</span><span>'+x.n+(x.n?' · '+[x.going?x.going+" going":"",x.mine?x.mine+" at mine":"",x.ret?x.ret+" return":"",x.done?x.done+" done":""].filter(Boolean).join(" · "):"")+(x.moved?' · '+x.moved+' moved out':'')+'</span></div>'+
+      '<div class="kv"><span>'+(x.closed?"Dates":"Started")+'</span><span>'+(x.start?fmtD(x.start):"–")+(x.closed?" → "+fmtD(x.end):"")+'</span></div>'+
+      '<div class="kv"><span>Days</span><span>'+x.days+(x.n?' · avg '+Math.round(x.avg)+' · slowest '+x.slow:'')+'</span></div>'+
+      (canWrite?'<div class="kv val"><span>Value</span><span>'+(x.rate&&(x.rate.go_rate||x.rate.ret_rate)?money(x.val):'<span class="rnote">Add rates</span>')+'</span></div>':'')+'</button>'}).join(""):'<p class="rnote">No trips match.</p>';
+  $("tpnew").hidden=!canWrite;
+  if(tpCur!=null&&!$("tpdet").hidden)drawTrip();
+}
+function tpOpen(n){tpCur=+n;$("tplist").hidden=true;$("tpdet").hidden=false;drawTrip();window.scrollTo(0,0)}
+function tpClose(){tpCur=null;$("tpdet").hidden=true;$("tplist").hidden=false}
+function drawTrip(){
+  var x=tpList.find(function(t){return t.no===tpCur});if(!x){tripModel(false).then(function(a){x=a.find(function(t){return t.no===tpCur});if(x){tpList.push(x);drawTrip()}});return}
+  tpTrip=x;var i=x.info,r=x.rate||{};
+  var legs='<div class="tleg"><b>Going leg</b>'+esc(legTxt(i.go_client||x.client,i.go_from,i.go_to,i.go_job))+(canWrite&&r.go_rate?'<div class="rnote">'+r.go_rate+' $/t × '+(r.go_tons||0)+' t × '+x.n+' trucks = '+money(x.goVal)+'</div>':'')+'</div>'+
+    '<div class="tleg"><b>Return leg</b>'+(i.ret_client||i.ret_job||i.ret_from?esc(legTxt(i.ret_client,i.ret_from,i.ret_to,i.ret_job)):'<span class="rnote">Not booked yet</span>')+(canWrite&&r.ret_rate?'<div class="rnote">'+r.ret_rate+' $/t × '+(r.ret_tons||0)+' t × '+x.n+' trucks = '+money(x.retVal)+'</div>':'')+'</div>'+
+    (canWrite?'<div class="tleg"><b>Trip value</b>'+(r.go_rate||r.ret_rate?money(x.val):'<span class="rnote">No rates yet. Tap Edit trip.</span>')+'</div>':'');
+  $("tphead").innerHTML='<h2>Trip '+x.no+' '+tpTag(x)+'</h2><div class="rnote">'+(x.start?(x.closed?"From "+fmtD(x.start)+" to "+fmtD(x.end):"Started "+fmtD(x.start)):"No start date yet")+' · '+x.days+' day(s) · '+x.n+' truck(s)'+(x.moved?' · '+x.moved+' moved out':'')+(i.notes?' · '+esc(i.notes):'')+'</div><div class="tlegs">'+legs+'</div>';
+  $("tpedit").hidden=$("tpadd").hidden=!canWrite;
+  $("tpdcnt").textContent=x.n+" truck(s)"+(x.moved?" + "+x.moved+" moved out":"");
+  var rows=x.trucks.slice().sort(function(a,b){var o={active:0,done:1,moved:2};return (o[a.state]-o[b.state])||(b.ms-a.ms)||(a.plate<b.plate?-1:1)});
+  $("tpbody").innerHTML=rows.map(function(t){var c=t.cur,s=c&&t.on?(SO[c.step]||{}):{},dots="";
+    for(var k=0;k<8;k++)dots+='<i class="'+(k<t.ms||t.state==="done"?"on":(k===t.ms&&t.state==="active"?"now":""))+'"></i>';
+    var leg=t.state==="moved"?"Moved to trip "+(c?c.trip_no:"?"):t.state==="done"?"Finished "+fmtD(t.fin):legOf(t.ms,t.left);
+    var dis=t.state==="active"?(t.late?'<span class="tag late">'+daysOf(c)+'</span>':daysOf(c)):"–";
+    return '<tr class="row'+(t.state==="moved"?" moved":"")+'" data-p="'+esc(t.plate)+'"><td><b>'+esc(t.plate)+'</b></td><td>'+esc(t.driver||"")+'</td><td>'+esc(t.trailer||"")+'</td><td>'+esc(leg)+'</td><td>'+(t.state==="active"?'<span class="tag '+(s.st==="clearing"?"clearing":(s.st==="in transit"?"transit":""))+'">'+esc(s.l||c.step)+'</span>':"–")+'</td><td>'+esc(t.state==="active"?(c.location||""):"")+'</td><td>'+dis+'</td><td>'+t.days+'</td><td><div class="tpdots" aria-label="progress">'+dots+'</div></td></tr>'}).join("")||'<tr><td colspan="9" class="rnote">No trucks on this trip yet.</td></tr>';
+}
+$("tpgrid").addEventListener("click",function(e){var b=e.target.closest(".tpc");if(b)tpOpen(b.dataset.n)});
+$("tpback").onclick=function(){tpClose();drawTrips(false)};
+$("tpbody").addEventListener("click",function(e){var r=e.target.closest("tr.row");if(r&&trucks.some(function(t){return t.plate===r.dataset.p}))openEdit(r.dataset.p)});
+["tpq","tpc","tps","tpm"].forEach(function(id){$(id).addEventListener("input",function(){drawTrips(false)})});
+$("tpxl").onclick=function(){if(!tpList.length){toast("Nothing to download");return}
+  var h=["Trip","Status","Going client","Going job","Going from","Going to","Return client","Return job","Return from","Return to","Trucks","Done","Moved out","Started","Finished","Days","Avg days per truck","Slowest truck days"];
+  if(canWrite)h=h.concat(["Going $/t","Going t/truck","Return $/t","Return t/truck","Going value","Return value","Trip value"]);
+  var rows=[h].concat(tpList.map(function(x){var i=x.info,r=x.rate||{},a=[x.no,x.n?(x.closed?"Finished":"Ongoing"):"No trucks",i.go_client||x.client,i.go_job||"",i.go_from||"",i.go_to||"",i.ret_client||"",i.ret_job||"",i.ret_from||"",i.ret_to||"",x.n,x.done,x.moved,fmtD(x.start),fmtD(x.end),x.days,Math.round(x.avg),x.slow];
+    if(canWrite)a=a.concat([r.go_rate||"",r.go_tons||"",r.ret_rate||"",r.ret_tons||"",x.goVal||0,x.retVal||0,x.val||0]);return a}));
+  saveSheet("Orbis Trips "+fmtD(todayKey()).replace(/\//g,"-"),"Trips",rows)};
+$("tpdxl").onclick=function(){var x=tpTrip;if(!x)return;
+  var rows=[["Trip","Truck","Driver","Trailer","Leg","Status","Location","Days in status","Days on trip","Started","Finished"]].concat(x.trucks.map(function(t){var c=t.cur,a=t.state==="active";
+    return [x.no,t.plate,t.driver||"",t.trailer||"",t.state==="moved"?"Moved to trip "+(c?c.trip_no:""):t.state==="done"?"Finished":legOf(t.ms,t.left),a?((SO[c.step]||{}).l||c.step):"",a?(c.location||""):"",a?daysOf(c):"",t.days,fmtD(t.start),fmtD(t.fin)]}));
+  saveSheet("Orbis Trip "+x.no,"Trip "+x.no,rows)};
+
+/* ----- trip sheet: new trip (dispatch) / edit trip / add trucks ----- */
+function tsPlaces(){var p={"Dar es Salaam":1};MINES.forEach(function(m){p[m]=1});Object.keys(TRIPS).forEach(function(k){var i=TRIPS[k];[i.go_from,i.go_to,i.ret_from,i.ret_to].forEach(function(v){if(v)p[v]=1})});
+  $("tsplaces").innerHTML=Object.keys(p).sort().map(function(v){return '<option value="'+esc(v)+'">'}).join("")}
+function tsCands(){var no=tsMode==="new"?-1:tpCur,q=$("ts_q").value.trim().toUpperCase().replace(/\s/g,""),all=$("ts_all").checked;
+  return trucks.filter(function(t){var m=msOf(t.step);return (+t.trip_no||1)!==no&&(all||m===0||m===7||t.step==="maintenance")&&(!q||t.plate.indexOf(q)>=0)}).sort(function(a,b){return a.plate<b.plate?-1:1})}
+function tsDrawList(){var sel={};document.querySelectorAll("#tslist input:checked").forEach(function(i){sel[i.value]=1});
+  var L=tsCands();$("tslist").innerHTML=L.length?L.map(function(t){return '<label><input type="checkbox" value="'+esc(t.plate)+'"'+(sel[t.plate]?" checked":"")+'><span><b>'+esc(t.plate)+'</b><small>'+esc(cli(t))+' · '+esc((SO[t.step]||{}).l||t.step)+' · trip '+(t.trip_no||1)+'</small></span></label>'}).join(""):'<div class="none">No trucks in Dar or at the yard. Tick "Show all trucks" to pick others.</div>';tsCount()}
+function tsCount(){var n=document.querySelectorAll("#tslist input:checked").length;$("tspicks").textContent=n?n+" selected":""}
+$("tslist").addEventListener("change",tsCount);$("ts_q").addEventListener("input",tsDrawList);$("ts_all").addEventListener("change",tsDrawList);
+function tsSet(id,v){$(id).value=v==null?"":v}
+function openTripSheet(mode){if(!canWrite)return;tsMode=mode;var x=mode==="new"?null:tpTrip,i=x?x.info:{},r=x&&x.rate||{};
+  tsPlaces();var cl=function(sel,blank){return (blank?opt("","—"):"")+CLIENTS.map(function(c){return opt(c,c,c===sel)}).join("")};
+  $("tstitle").textContent=mode==="new"?"New trip":mode==="edit"?"Edit trip "+x.no:"Add trucks to trip "+x.no;
+  $("tssub").textContent=mode==="new"?"Pick the trucks leaving Dar. They move to the status below and get this trip number.":mode==="edit"?"Change the trip details. Changing the number also changes it on every truck and in the history.":"The ticked trucks move to this trip. Their status stays the same.";
+  $("tsfields").hidden=mode==="add";$("tspick").hidden=mode==="edit";$("tsstepbox").hidden=mode!=="new";
+  $("tspickt").textContent=mode==="new"?"Trucks to dispatch":"Trucks to add";
+  tsSet("ts_no",mode==="new"?nextTripNo():x.no);tsSet("ts_date",mode==="new"?todayKey():i.dispatch_date);
+  $("ts_gcl").innerHTML=cl(mode==="new"?"Reload":(i.go_client||x.client),false);$("ts_rcl").innerHTML=cl(i.ret_client||"",true);
+  tsSet("ts_gjob",i.go_job);tsSet("ts_gfrom",mode==="new"?"Dar es Salaam":i.go_from);tsSet("ts_gto",i.go_to);
+  tsSet("ts_rjob",i.ret_job);tsSet("ts_rfrom",i.ret_from);tsSet("ts_rto",i.ret_to||"Dar es Salaam");
+  tsSet("ts_grate",r.go_rate);tsSet("ts_gtons",r.go_tons!=null?r.go_tons:32);tsSet("ts_rrate",r.ret_rate);tsSet("ts_rtons",r.ret_tons!=null?r.ret_tons:32);tsSet("ts_notes",i.notes);
+  $("ts_q").value="";$("ts_all").checked=false;$("tslist").innerHTML="";if(mode!=="edit")tsDrawList();
+  $("tsheet").hidden=false}
+function closeTS(){$("tsheet").hidden=true}
+$("tpnew").onclick=function(){openTripSheet("new")};$("tpedit").onclick=function(){openTripSheet("edit")};$("tpadd").onclick=function(){openTripSheet("add")};
+$("tscancel").onclick=closeTS;$("tsheet").addEventListener("click",function(e){if(e.target===this)closeTS()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("tsheet").hidden)closeTS()});
+async function tsMove(plates,no,setStep,dDate,client,mine){
+  if(!plates.length)return true;var now=new Date().toISOString(),upd={trip_no:no,updated_at:now,updated_by:myName};
+  if(setStep){var s=SO[setStep]||{};upd.step=setStep;upd.location=s.loc||null;upd.stage_since=dDate||todayKey();if(client)upd.client=client;upd.mine=mine||null}
+  var r=await sb.from("trucks").update(upd).in("plate",plates).select();
+  if(r.error||!r.data||!r.data.length){toast("Couldn't update the trucks");return false}
+  await sb.from("truck_log").insert(r.data.map(function(t){return {plate:t.plate,step:t.step,location:t.location,trip_no:t.trip_no,driver:t.driver,trailer:t.trailer,notes:setStep?"Dispatched on trip "+no:"Moved to trip "+no,changed_by:myName}}));
+  LOGS=null;r.data.forEach(upsertLocal);return true}
+$("tsform").onsubmit=async function(e){e.preventDefault();if(!canWrite)return;
+  var b=$("tssave");b.disabled=true;b.textContent="Saving…";
+  try{
+    var plates=[].map.call(document.querySelectorAll("#tslist input:checked"),function(i){return i.value});
+    if(tsMode==="add"){if(!plates.length){toast("Tick at least one truck");return}if(await tsMove(plates,tpCur,null)){toast(plates.length+" truck(s) added to trip "+tpCur);closeTS()}return}
+    var no=parseInt($("ts_no").value,10);if(!(no>0)){toast("Enter a trip number");return}
+    var old=tsMode==="edit"?tpCur:null,taken=(no!==old)&&(TRIPS[no]||trucks.some(function(t){return (+t.trip_no||1)===no}));
+    if(taken){toast("Trip "+no+" already exists");return}
+    if(tsMode==="new"&&!plates.length){toast("Tick the trucks to dispatch");return}
+    if(old!=null&&no!==old){var rr=await sb.rpc("rename_trip",{old_no:old,new_no:no});if(rr.error){toast("Couldn't change the trip number");return}
+      trucks.forEach(function(t){if((+t.trip_no||1)===old)t.trip_no=no});LOGS=null;tpCur=no}
+    var g=function(id){var v=$(id).value.trim();return v||null},now=new Date().toISOString();
+    var info={trip_no:no,dispatch_date:g("ts_date"),go_client:g("ts_gcl"),go_job:g("ts_gjob"),go_from:g("ts_gfrom"),go_to:g("ts_gto"),ret_client:g("ts_rcl"),ret_job:g("ts_rjob"),ret_from:g("ts_rfrom"),ret_to:g("ts_rto"),notes:g("ts_notes"),updated_at:now,updated_by:myName};
+    var r1=await sb.from("trips").upsert(info).select();if(r1.error||!r1.data.length){toast("Couldn't save the trip");return}
+    await sb.from("trip_rates").upsert({trip_no:no,go_rate:num($("ts_grate").value),go_tons:num($("ts_gtons").value),ret_rate:num($("ts_rrate").value),ret_tons:num($("ts_rtons").value),updated_at:now,updated_by:myName});
+    if(tsMode==="new"){var to=(info.go_to||"").toLowerCase(),mine=MINES.find(function(m){return m.toLowerCase()===to})||null;
+      if(!(await tsMove(plates,no,$("ts_step").value,info.dispatch_date,info.go_client,mine)))return;toast("Trip "+no+" dispatched with "+plates.length+" truck(s)");closeTS();tripsAt=0;tpOpen(no);await drawTrips(true);return}
+    toast("Trip "+no+" saved");closeTS();
+  }finally{b.disabled=false;b.textContent="Save";tripsAt=0;if(!$("trips").hidden)drawTrips(true)}};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",trucks:"All trucks",users:"Users"};
 function show(v){
   if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
-  ["dash","detail","reports","target","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
+  ["dash","detail","reports","target","trips","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
   if(!r.data.length&&!canWrite){$("state").classList.add("off");$("stxt").textContent="No access";return false}
-  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
+  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("trips").hidden)drawTrips(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
 }
 async function start(session){
   me=session.user;myName=me.email;canWrite=false;
