@@ -379,6 +379,17 @@ tr.moved td{opacity:.55}
 .xtypes label{display:flex;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--card-line);border-radius:12px;font-size:14px;background:var(--surface)}
 .btn.warn{background:rgba(255,59,48,.9);color:#fff}
 @media (max-width:700px){.xhide{display:none}}
+/* monthly service (Pesapal) */
+.billbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin:10px clamp(16px,2.2vw,40px) 0;padding:10px 16px;border-radius:16px;background:rgba(255,159,10,.18);border:1px solid var(--card-line);font-size:14px}
+.billbar b{font-weight:600}
+.bcard{background:var(--card-bg);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);border:1px solid var(--card-line);box-shadow:var(--card-shadow);border-radius:22px;padding:20px;display:grid;gap:10px;max-width:560px}
+.bcard .amt{font-size:clamp(34px,4vw,48px);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.bcard .amt small{font-size:15px;font-weight:600;color:var(--mute);letter-spacing:0;margin-left:6px}
+.bcard .kv{display:flex;justify-content:space-between;gap:10px;font-size:14px}.bcard .kv span:first-child{color:var(--mute)}
+.paused{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+.paused .bcard{text-align:center;justify-items:center}
+.paused h2{margin:0;font-size:28px;letter-spacing:-.02em}
+.paused p{margin:0;color:var(--mute);max-width:44ch}
 </style>
 </head>
 <body>
@@ -399,6 +410,7 @@ tr.moved td{opacity:.55}
     <button class="mb-btn" id="mbtn" aria-label="Open menu" aria-expanded="false" aria-controls="mm" hidden><span></span><span></span></button>
   </div>
 </div></header>
+<div class="billbar" id="billbar" hidden><span id="billtxt"></span><button class="btn sm" id="billgo" type="button">Pay now</button></div>
 <div class="shade" id="shade"></div>
 <nav class="mm" id="mm" aria-label="Menu">
   <button type="button" data-view="dash" aria-current="page">Dashboard</button>
@@ -409,6 +421,7 @@ tr.moved td{opacity:.55}
   <button type="button" data-view="tzx" id="mtzx" hidden>Tunduma expenses</button>
   <button type="button" data-view="trucks" id="mtrucks" hidden>All trucks (edit)</button>
   <button type="button" data-view="users" id="musers" hidden>Users</button>
+  <button type="button" data-view="bill" id="mbill" hidden>Monthly service</button>
   <hr>
   <button type="button" class="out" id="mout">Sign out</button>
 </nav>
@@ -574,6 +587,14 @@ tr.moved td{opacity:.55}
   </section>
 </main>
 
+<main class="page" id="bill" hidden>
+  <h2>Monthly service</h2>
+  <p class="lead" id="blead">Payment for the Fleet Status service, through Pesapal (card, M-Pesa, Tigo Pesa, Airtel Money).</p>
+  <div class="bcard" id="bcard"></div>
+  <div class="tbl" style="max-width:900px"><table><thead><tr><th>Month</th><th class="xamt">Amount</th><th>Status</th><th>Method</th><th>Confirmation</th><th>Paid on</th></tr></thead><tbody id="bbody"></tbody></table></div>
+  <p class="rnote">After paying, Pesapal brings you back here and the status updates by itself. Receipts are emailed by Pesapal.</p>
+</main>
+
 <main class="page" id="users" hidden>
   <h2>Users</h2>
   <p class="lead">People on this list can sign in and see the boards. Only accounts with "Can edit" can change trucks. Each person also needs a login: create it in Supabase → Authentication → Users with the same email.</p>
@@ -698,6 +719,8 @@ tr.moved td{opacity:.55}
     <div class="acts" id="xlacts"></div>
   </form>
 </div>
+
+<div class="paused" id="paused" hidden><div class="bcard"><h2>Fleet Status is paused</h2><p id="ptext">The monthly service payment is overdue. Please ask finance to complete the payment.</p><button class="btn ghost" id="pout" type="button">Sign out</button></div></div>
 
 <div class="toast" id="toast" role="status"></div>
 
@@ -1593,30 +1616,75 @@ $("xxl").onclick=async function(){
     X.writeFile(wb,nm+".xlsx");
   }catch(e){toast("Couldn't make the Excel file")}};
 
+/* ----- monthly service (Pesapal) ----- */
+var BS=null,BP=[];
+function bMonth(p){if(!p)return "";var a=p.split("-");return new Date(Date.UTC(+a[0],+a[1]-1,1)).toLocaleString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}
+function bAmt(){return BS?BS.currency+" "+Number(BS.amount).toLocaleString("en-US",{minimumFractionDigits:2}):""}
+var BSTAT={pending:["Not finished","req"],paid:["Paid","paid"],failed:["Failed","rej"],reversed:["Reversed","rej"],invalid:["Not accepted","rej"]};
+async function billCheck(){
+  var r=await sb.rpc("billing_state");if(r.error||!r.data){BS=null;return false}BS=r.data;
+  var show=BS.can_pay||BS.is_admin;$("mbill").hidden=!show;
+  if(BS.locked){$("ptext").textContent="The "+BS.label+" payment for "+bMonth(BS.unpaid_period)+" was due on "+fmtD(BS.due_date)+". Please ask finance to complete the payment.";$("paused").hidden=false;return true}
+  $("paused").hidden=true;
+  if(BS.unpaid_period&&show){$("billbar").hidden=false;$("billtxt").innerHTML="<b>"+esc(BS.label)+"</b> · "+esc(bMonth(BS.unpaid_period))+" · "+esc(bAmt())+(BS.vat_included?" (VAT inclusive)":"")+" · due "+fmtD(BS.due_date)+", pay by "+fmtD(BS.lock_date);$("billgo").hidden=!BS.can_pay}
+  else $("billbar").hidden=true;
+  return false;
+}
+async function drawBill(){
+  if(!BS)await billCheck();if(!BS)return;
+  var r=await sb.from("billing_payments").select("*").order("created_at",{ascending:false}).limit(60);BP=r.data||[];
+  var due=BS.unpaid_period;
+  $("bcard").innerHTML='<div class="lab">'+esc(BS.label)+'</div><div class="amt">'+esc(bAmt())+(BS.vat_included?'<small>VAT inclusive</small>':'')+'</div>'+
+    (due?'<div class="kv"><span>Month</span><span>'+esc(bMonth(due))+'</span></div><div class="kv"><span>Due</span><span>'+fmtD(BS.due_date)+'</span></div><div class="kv"><span>Pay by</span><span>'+fmtD(BS.lock_date)+'</span></div>'+
+      (BS.can_pay?'<button class="btn" id="bpay" type="button">Pay '+esc(bAmt())+' with Pesapal</button>':'<div class="kv"><span>Status</span><span><span class="tag req">Waiting for finance to pay</span></span></div>')
+     :'<div class="kv"><span>Status</span><span><span class="tag paid">All paid</span></span></div><div class="kv"><span>Next payment</span><span>1st of next month</span></div>');
+  var paid=BP.filter(function(p){return p.status==="paid"}),other=BP.filter(function(p){return p.status!=="paid"}).slice(0,10);
+  $("bbody").innerHTML=paid.concat(other).map(function(p){var s=BSTAT[p.status]||[p.status,""];return '<tr><td>'+esc(bMonth(p.period))+'</td><td class="xamt"><b>'+Number(p.amount).toLocaleString("en-US",{minimumFractionDigits:2})+'</b> '+esc(p.currency)+'</td><td><span class="tag '+s[1]+'">'+s[0]+'</span></td><td>'+esc(p.method||"–")+'</td><td>'+esc(p.confirmation_code||"–")+'</td><td>'+(p.paid_at?fmtD(dkey(p.paid_at)):"–")+'</td></tr>'}).join("")||'<tr><td colspan="6" class="rnote">No payments yet.</td></tr>';
+  if($("bpay"))$("bpay").onclick=bPay;
+}
+async function bPay(){
+  var b=$("bpay")||$("billgo");if(b){b.disabled=true;b.textContent="Opening Pesapal…"}
+  try{var r=await sb.functions.invoke("pesapal-pay",{body:{callback_url:location.origin+location.pathname}});
+    var d=r.data||{};if(!d.redirect_url){var e="";try{e=(r.error&&r.error.context&&(await r.error.context.json()).error)||d.error||""}catch(x){}
+      toast({NO_KEYS:"Pesapal keys are not set in Supabase yet",AUTH_FAILED:"Pesapal refused the keys. Check them in Supabase",NOT_ALLOWED:"Only finance can pay",NOTHING_DUE:"Nothing is due right now"}[e]||"Couldn't open Pesapal. Try again");return}
+    location.href=d.redirect_url;
+  }finally{if(b){b.disabled=false;b.textContent=b.id==="billgo"?"Pay now":"Pay "+bAmt()+" with Pesapal"}}}
+async function bReturn(){
+  var q=new URLSearchParams(location.search),tid=q.get("OrderTrackingId");if(!tid)return false;
+  try{history.replaceState(null,"",location.pathname+"#bill")}catch(e){}
+  toast("Checking the payment…");
+  for(var i=0;i<4;i++){try{var r=await fetch(SUPABASE_URL+"/functions/v1/pesapal-ipn?OrderTrackingId="+encodeURIComponent(tid)+"&OrderMerchantReference="+encodeURIComponent(q.get("OrderMerchantReference")||""),{headers:{apikey:SUPABASE_KEY}});
+      var j=await r.json();if(j.payment==="paid"){toast("Payment received. Thank you");break}if(j.payment==="failed"){toast("Payment failed. Nothing was charged");break}}catch(e){}
+    await new Promise(function(ok){setTimeout(ok,3000)})}
+  await billCheck();return true}
+$("billgo").onclick=function(){show("bill")};
+$("pout").onclick=function(){$("paused").hidden=true;$("mout").onclick()};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",tzx:"Tunduma expenses",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",tzx:"Tunduma expenses",bill:"Monthly service",trucks:"All trucks",users:"Users"};
 function show(v){
   if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
   if(v==="tzx"&&!finRole)v="dash";
+  if(v==="bill"&&!(BS&&(BS.can_pay||BS.is_admin)))v="dash";
   if(finRole==="runner")v="tzx";
   if(typeof xCloseLine==="function"){if(!$("xlsheet").hidden)xCloseLine();if(!$("xsheet").hidden)xCloseVisit()}
-  ["dash","detail","reports","target","trips","tzx","trucks","users"].forEach(function(x){$(x).hidden=x!==v});
+  ["dash","detail","reports","target","trips","tzx","trucks","users","bill"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();if(v==="tzx")xLoad(false);
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();if(v==="tzx")xLoad(false);if(v==="bill")drawBill();
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","tzx","trucks","users"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","tzx","trucks","users","bill"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=finRole==="runner"?await sb.rpc("fin_trucks"):await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
@@ -1631,8 +1699,10 @@ async function start(session){
   if(u.data){myName=u.data.name||me.email;canWrite=!!u.data.can_edit;finRole=u.data.fin_role||null}
   xTab=finRole==="approver"?"req":finRole==="payer"?"app":"now";$("xfrom").value=xAdd(xToday(),-6);$("xto").value=xToday();
   gate(false);$("mbtn").hidden=false;$("mtrucks").hidden=!canWrite;$("musers").hidden=!canWrite;$("mtzx").hidden=!finRole;
-  document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(finRole==="runner")b.hidden=b.dataset.view!=="tzx";else if(!/^(trucks|users|tzx)$/.test(b.dataset.view))b.hidden=false});
-  var h=(location.hash||"").slice(1);show(TITLES[h]?h:"dash");
+  document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(finRole==="runner")b.hidden=b.dataset.view!=="tzx";else if(!/^(trucks|users|tzx|bill)$/.test(b.dataset.view))b.hidden=false});
+  BS=null;if(await billCheck())return;
+  var back=await bReturn();
+  var h=back?"bill":(location.hash||"").slice(1);show(TITLES[h]?h:"dash");
   var ok=await pull();
   if(!ok&&!u.data)toast("This account has no access to the board yet");
   if(chan)sb.removeChannel(chan);
@@ -1647,7 +1717,7 @@ $("lform").onsubmit=async function(e){
   if(r.error){$("lerr").textContent="Wrong email or password";return}
   $("lpass").value="";start(r.data.session);
 };
-$("mout").onclick=async function(){setM(false);if(chan){sb.removeChannel(chan);chan=null}await sb.auth.signOut();me=null;finRole=null;XR=[];$("mtzx").hidden=true;trucks=[];rebuild();$("state").classList.add("off");$("stxt").textContent="Signed out";gate(true)};
+$("mout").onclick=async function(){setM(false);if(chan){sb.removeChannel(chan);chan=null}await sb.auth.signOut();me=null;finRole=null;BS=null;$("billbar").hidden=true;$("mbill").hidden=true;XR=[];$("mtzx").hidden=true;trucks=[];rebuild();$("state").classList.add("off");$("stxt").textContent="Signed out";gate(true)};
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&me)pull()});
 setInterval(function(){if(me)pull()},120000);
 if("serviceWorker" in navigator&&location.protocol==="https:")window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
