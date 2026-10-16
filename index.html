@@ -511,7 +511,7 @@ tr.moved td{opacity:.55}
 
 <main class="page" id="target" hidden>
   <h2>Target</h2>
-  <p class="lead tlead">Trucks on the return trip, from transit to Kasumbalesa or Sakania until they reach the yard. The expected yard date moves later when a truck stays in a status longer than its standard days. Trucks expected at the yard from the 25th count for next month&rsquo;s target.</p>
+  <p class="lead tlead">Trucks on the return trip, from transit to Kasumbalesa or Sakania until they reach the yard. The expected yard date moves later when a truck stays in a status longer than its standard days. A truck counts for the month (1st to last day) in which it is expected at the yard. Press Achievement to compare with trucks already loaded at Dar.</p>
   <div class="bar2">
     <select id="tgm" aria-label="Target month"></select>
     <input id="tgq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
@@ -1154,11 +1154,11 @@ function tgPath(step){var p=TG_PATH.kas.indexOf(step)>=0?TG_PATH.kas:(TG_PATH.sa
 async function loadStd(force){if(TG_STD&&!force)return TG_STD;var m={};Object.keys(TG_DEF).forEach(function(k){m[k]=TG_DEF[k]});
   var r=await sb.from("target_days").select("step,days");if(!r.error&&r.data)r.data.forEach(function(x){m[x.step]=+x.days});TG_STD=m;return m}
 function monthKey(y,m){return y+"-"+String(m).padStart(2,"0")}
-function tgWindow(mk){var y=+mk.slice(0,4),m=+mk.slice(5,7),py=m===1?y-1:y,pm=m===1?12:m-1;return {from:monthKey(py,pm)+"-25",to:mk+"-24"}}
+function tgWindow(mk){var y=+mk.slice(0,4),m=+mk.slice(5,7),last=new Date(Date.UTC(y,m,0)).getUTCDate();return {from:mk+"-01",to:mk+"-"+String(last).padStart(2,"0")}}
 function mName(mk,yr){return new Date(mk+"-01T00:00:00Z").toLocaleDateString("en-GB",yr?{month:"long",year:"numeric",timeZone:"UTC"}:{month:"long",timeZone:"UTC"})}
 function fillTgMonths(){var sel=$("tgm"),v=sel.value,T=todayKey(),y=+T.slice(0,4),m=+T.slice(5,7),d=+T.slice(8,10),o=[];
-  var start=d>=25?1:0;for(var i=start;i<start+4;i++){var mm=m+i,yy=y+Math.floor((mm-1)/12);mm=(mm-1)%12+1;o.push(monthKey(yy,mm))}
-  var def=v&&o.indexOf(v)>=0?v:o[1];
+  for(var i=0;i<4;i++){var mm=m+i,yy=y+Math.floor((mm-1)/12);mm=(mm-1)%12+1;o.push(monthKey(yy,mm))}
+  var def=v&&o.indexOf(v)>=0?v:o[0];
   sel.innerHTML=o.map(function(k){return opt(k,mName(k,1)+" target",k===def)}).join("")}
 /* one truck: days left in this status (at least 1 when over standard) + standard days of every later status to the yard */
 function tgCalc(t,S,T){var pp=tgPath(t.step);if(!pp)return null;var path=pp.p;
@@ -1217,9 +1217,13 @@ async function drawAch(force){
   var dim=new Date(Date.UTC(+mk.slice(0,4),+mk.slice(5,7),0)).getUTCDate(),el=mk<cm?dim:mk===cm?(+T.slice(8,10))-1:0;
   var act=rows.length,mtd=tg*el/dim,mp=mtd?act/mtd:(tg?0:null),ach=tg?act/tg:null,max=trucks.length;
   var cls=function(v){return v==null?"":v>=1?"ok":v>=.8?"warn":"bad"};
-  var tiles=[[tg,"Target"],[Math.round(mtd),"MTD target · "+el+" of "+dim+" days"],[pct(mp),"MTD achieved",cls(mp)],[mn,"Minimum"],[max,"Maximum · all trucks"],[act,"Actual · loaded at Dar",act<mn?"bad":""],[pct(ach),"Monthly achievement",cls(ach)]];
+  var need=Math.max(0,tg-act),sup=null,atDar=0,ret=0;
+  if(mk===cm){var S=await loadStd(false),W=tgWindow(mk);
+    trucks.forEach(function(t){if(["at_yard","wait_dar","load_dar"].indexOf(t.step)>=0){atDar++;return}var x=tgCalc(t,S,T);if(x&&x.ret&&x.eta<=W.to)ret++});sup=atDar+ret}
+  var tiles=[[tg,"Target"],[Math.round(mtd),"MTD target · "+el+" of "+dim+" days"],[pct(mp),"MTD achieved",cls(mp)],[mn,"Minimum"],[max,"Maximum · all trucks"],[act,"Actual · loaded at Dar",act<mn?"bad":""],[pct(ach),"Monthly achievement",cls(ach)],[need,"Still needed to reach "+tg]];
+  if(sup!=null)tiles.push([sup,"Expected supply · "+atDar+" at Dar + "+ret+" reaching yard by "+fmtD(tgWindow(mk).to).slice(0,5),sup>=need?"ok":"bad"],[sup>=need?"On track":"Short "+(need-sup),sup>=need?"Supply covers what is still needed":"Not enough trucks expected this month",sup>=need?"ok":"bad"]);
   $("tgasum").innerHTML=tiles.map(function(x){return '<button type="button" tabindex="-1" class="'+(x[2]||"")+'"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></button>'}).join("");
-  $("tganote").textContent="Actual counts trucks marked \u201cLoaded \u00b7 Dar (not yet left)\u201d in "+mName(mk,1)+" (one per truck per trip). MTD target = target \u00d7 days passed up to yesterday \u00f7 days in the month."+(g.updated_by?" Target set by "+g.updated_by+" on "+fmtD(dkey(g.updated_at))+".":"");
+  $("tganote").textContent="Actual counts trucks marked \u201cLoaded \u00b7 Dar (not yet left)\u201d in "+mName(mk,1)+" (one per truck per trip). MTD target = target \u00d7 days passed up to yesterday \u00f7 days in the month."+(sup!=null?" Expected supply = trucks at Dar not yet loaded (at yard, waiting, loading) + returning trucks the Target list expects at the yard by month end.":"")+(g.updated_by?" Target set by "+g.updated_by+" on "+fmtD(dkey(g.updated_at))+".":"");
   $("tgabody").innerHTML=rows.length?rows.map(function(r){return '<tr><td><b>'+esc(r.plate)+'</b></td><td>'+esc(r.client)+'</td><td>'+fmtD(r.d)+'</td><td>'+esc(String(r.trip))+'</td><td>'+esc(r.by)+'</td></tr>'}).join(""):'<tr><td colspan="5" class="rnote">No truck marked loaded at Dar in this month yet.</td></tr>';
 }
 $("tgachb").onclick=function(){var on=$("tgach").hidden;$("tgach").hidden=!on;this.setAttribute("aria-pressed",on);try{localStorage.setItem("fs_ach",on?"1":"")}catch(e){}if(on)drawAch(true)};
