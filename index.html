@@ -249,6 +249,14 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .bar2 input[type=date]{flex:0 0 auto}
 .bar2 label.rnote{display:flex;align-items:center;gap:6px}
 /* target page */
+.tgach{margin:14px 0 6px;padding:16px;border:1px solid var(--card-line);border-radius:22px;background:var(--card-bg)}
+.tgach .achbar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px}
+.tgach .achbar .fld{width:120px}.tgach .achbar .fld.m{width:190px}
+.tgach .tgsum{margin-top:0}
+.tgach .tgsum button{cursor:default}
+.tgach .tgsum button.ok b{color:var(--ok)}.tgach .tgsum button.warn b{color:var(--warn)}.tgach .tgsum button.bad b{color:var(--err)}
+#tgachb[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.tpseg{max-width:420px;margin:12px 0 0}
 .tlead{max-width:900px;margin:6px 0 14px}
 .tgsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
 .tgsum button{font:inherit;text-align:left;border:1px solid var(--card-line);background:var(--card-bg);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4);color:var(--fg);border-radius:20px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
@@ -508,9 +516,21 @@ tr.moved td{opacity:.55}
     <select id="tgm" aria-label="Target month"></select>
     <input id="tgq" type="search" placeholder="Search plate, trip no., driver, place…" aria-label="Search trucks">
     <select id="tgc" aria-label="Client"></select>
+    <button class="btn sm ghost" id="tgachb" type="button" aria-pressed="false" aria-controls="tgach">Achievement</button>
     <button class="btn sm" id="tgxl" type="button">Download Excel</button>
     <span class="cnt" id="tgcnt"></span>
   </div>
+  <section class="tgach" id="tgach" hidden>
+    <div class="achbar">
+      <label class="fld m">Month<select id="tgam"></select></label>
+      <label class="fld">Target<input id="tga_t" type="number" min="0" max="999" inputmode="numeric"></label>
+      <label class="fld">Minimum<input id="tga_min" type="number" min="0" max="999" inputmode="numeric"></label>
+      <button class="btn sm" id="tgasave" type="button" hidden>Save target</button>
+    </div>
+    <div class="tgsum" id="tgasum"></div>
+    <p class="rnote" id="tganote"></p>
+    <div class="tbl"><table><thead><tr><th>Truck</th><th>Client</th><th>Loaded at Dar</th><th>Trip</th><th>Marked by</th></tr></thead><tbody id="tgabody"></tbody></table></div>
+  </section>
   <div class="tgsum" id="tgsum"></div>
   <div class="tghd">Target by week</div><div class="rsum" id="tgweek"></div>
   <div class="tghd">Target by client</div><div class="rsum" id="tgcli"></div>
@@ -529,12 +549,13 @@ tr.moved td{opacity:.55}
   <div class="bar2">
     <input id="tpq" type="search" placeholder="Search trip no., plate, job, mine…" aria-label="Search trips">
     <select id="tpc" aria-label="Client"></select>
-    <select id="tps" aria-label="Trip status"><option value="">All trips</option><option value="open">Ongoing</option><option value="closed">Finished</option></select>
+    <input type="hidden" id="tps" value="open">
     <select id="tpm" aria-label="Month started"></select>
     <button class="btn sm" id="tpnew" type="button" hidden>New trip (dispatch)</button>
     <button class="btn sm ghost" id="tpxl" type="button">Download Excel</button>
     <span class="cnt" id="tpcnt"></span>
   </div>
+  <div class="seg tpseg" id="tpseg" role="tablist" aria-label="Trip status"><button type="button" role="tab" data-s="open" class="on" aria-selected="true">In progress <small id="tpn_open"></small></button><button type="button" role="tab" data-s="closed" aria-selected="false">Finished <small id="tpn_closed"></small></button></div>
   <div class="rsum" id="tpsum" style="margin-top:12px"></div>
   <div class="tpgrid" id="tpgrid"></div>
   </section>
@@ -671,7 +692,7 @@ tr.moved td{opacity:.55}
     <div id="tspick">
       <div class="tsleg w"><b id="tspickt">Trucks to dispatch</b> <span id="tspicks"></span></div>
       <div class="fgrid">
-        <label class="fld w" id="tsstepbox">Status after saving<select id="ts_step"><option value="loaded_dar">Loaded · Dar (not yet left)</option><option value="out_tr_tunduma" selected>In transit to Tunduma</option></select></label>
+        <label class="fld w" id="tsstepbox">Status after saving<select id="ts_step"><option value="loaded_dar" selected>Loaded · Dar (not yet left)</option><option value="out_tr_tunduma">In transit to Tunduma</option></select></label>
       </div>
       <div class="bar2 tsbar"><input id="ts_q" type="search" placeholder="Search plate…" aria-label="Search trucks"><label class="chk"><input id="ts_all" type="checkbox"> Show all trucks</label></div>
       <div class="tslist" id="tslist"></div>
@@ -1145,7 +1166,7 @@ function tgCalc(t,S,T){var pp=tgPath(t.step);if(!pp)return null;var path=pp.p;
   var tot=left+path.slice(1).reduce(function(a,k){return a+(S[k]||0)},0);
   return {plate:t.plate,client:cli(t),step:t.step,location:t.location||"",driver:t.driver||"",inDays:el+1,std:std,late:late,left:Math.ceil(tot),eta:addD(T,Math.ceil(tot)),ret:pp.ret,t:t}}
 async function drawTarget(force){
-  if($("target").hidden)return;
+  if($("target").hidden)return;drawAch(force);
   fillTgMonths();var cv=$("tgc").value;$("tgc").innerHTML=opt("","All clients")+CLIENTS.map(function(c){return opt(c,c,c===cv)}).join("");
   var S=await loadStd(force),T=todayKey(),mk=$("tgm").value,W=tgWindow(mk),c=$("tgc").value,q=$("tgq").value.trim(),mn=mName(mk);
   var all=trucks.map(function(t){var x=tgCalc(t,S,T);if(x)x.win=x.eta<W.from?"before":(x.eta>W.to?"after":"in");return x}).filter(Boolean);
@@ -1177,6 +1198,36 @@ async function drawStd(S){
     return '<tr><td><span class="tag">'+esc(s.l)+'</span> <span class="rnote">'+esc(s.g)+'</span></td><td>'+stc+'</td><td>'+(avg==null?'<span class="rnote">no data yet</span>':avg.toFixed(1))+'</td><td>'+(a?a.n:0)+'</td><td>'+(df==null?'':'<span class="diff '+(df>0.5?"up":(df<-0.5?"down":""))+'">'+(df>0?"+":"")+df.toFixed(1)+'</span>')+'</td></tr>'}).join("");
   $("tgsave").hidden=!canWrite;
 }
+/* ----- target achievement (same logic as the Excel sheet) ----- */
+var TGT=null;
+async function loadTgt(force){if(TGT&&!force)return TGT;var r=await sb.from("monthly_targets").select("month,target,minimum,updated_at,updated_by");if(r.error){toast("Couldn't load targets");return TGT||{}}TGT={};r.data.forEach(function(x){TGT[x.month]=x});return TGT}
+function pct(v){return v==null?"–":Math.round(v*100)+"%"}
+async function drawAch(force){
+  if($("target").hidden||$("tgach").hidden)return;
+  var G=await loadTgt(force),T=todayKey(),cm=T.slice(0,7),sel=$("tgam"),v=sel.value||cm,o=[],y=+cm.slice(0,4),mo=+cm.slice(5,7);
+  for(var i=0;i<6;i++){var mm=mo-i,yy=y;while(mm<1){mm+=12;yy--}o.push(monthKey(yy,mm))}
+  sel.innerHTML=o.map(function(k){return opt(k,mName(k,1),k===v)}).join("");var mk=sel.value;
+  var g=G[mk]||{target:0,minimum:2},tg=+g.target||0,mn=+g.minimum||0;
+  if(document.activeElement!==$("tga_t"))$("tga_t").value=tg;if(document.activeElement!==$("tga_min"))$("tga_min").value=mn;
+  $("tga_t").disabled=$("tga_min").disabled=!canWrite;$("tgasave").hidden=!canWrite;
+  var logs=await loadLogs(force),seen={},rows=[];
+  logs.forEach(function(h){if(h.step!=="loaded_dar")return;var d=dkey(h.changed_at);if(d.slice(0,7)!==mk)return;var k=h.plate+"|"+(h.trip_no||1);if(seen[k])return;seen[k]=1;
+    var t=trucks.find(function(x){return x.plate===h.plate})||{};rows.push({plate:h.plate,client:t.client||"",d:d,trip:h.trip_no||1,by:h.changed_by||""})});
+  rows.sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.plate<b.plate?-1:1)});
+  var dim=new Date(Date.UTC(+mk.slice(0,4),+mk.slice(5,7),0)).getUTCDate(),el=mk<cm?dim:mk===cm?(+T.slice(8,10))-1:0;
+  var act=rows.length,mtd=tg*el/dim,mp=mtd?act/mtd:(tg?0:null),ach=tg?act/tg:null,max=trucks.length;
+  var cls=function(v){return v==null?"":v>=1?"ok":v>=.8?"warn":"bad"};
+  var tiles=[[tg,"Target"],[Math.round(mtd),"MTD target · "+el+" of "+dim+" days"],[pct(mp),"MTD achieved",cls(mp)],[mn,"Minimum"],[max,"Maximum · all trucks"],[act,"Actual · loaded at Dar",act<mn?"bad":""],[pct(ach),"Monthly achievement",cls(ach)]];
+  $("tgasum").innerHTML=tiles.map(function(x){return '<button type="button" tabindex="-1" class="'+(x[2]||"")+'"><b>'+x[0]+'</b><span>'+esc(x[1])+'</span></button>'}).join("");
+  $("tganote").textContent="Actual counts trucks marked \u201cLoaded \u00b7 Dar (not yet left)\u201d in "+mName(mk,1)+" (one per truck per trip). MTD target = target \u00d7 days passed up to yesterday \u00f7 days in the month."+(g.updated_by?" Target set by "+g.updated_by+" on "+fmtD(dkey(g.updated_at))+".":"");
+  $("tgabody").innerHTML=rows.length?rows.map(function(r){return '<tr><td><b>'+esc(r.plate)+'</b></td><td>'+esc(r.client)+'</td><td>'+fmtD(r.d)+'</td><td>'+esc(String(r.trip))+'</td><td>'+esc(r.by)+'</td></tr>'}).join(""):'<tr><td colspan="5" class="rnote">No truck marked loaded at Dar in this month yet.</td></tr>';
+}
+$("tgachb").onclick=function(){var on=$("tgach").hidden;$("tgach").hidden=!on;this.setAttribute("aria-pressed",on);try{localStorage.setItem("fs_ach",on?"1":"")}catch(e){}if(on)drawAch(true)};
+try{if(localStorage.getItem("fs_ach")){$("tgach").hidden=false;$("tgachb").setAttribute("aria-pressed","true")}}catch(e){}
+$("tgam").addEventListener("input",function(){drawAch(false)});
+$("tgasave").onclick=async function(){if(!canWrite)return;var t=Math.max(0,Math.min(999,parseInt($("tga_t").value,10)||0)),n=Math.max(0,Math.min(999,parseInt($("tga_min").value,10)||0));
+  var r=await sb.from("monthly_targets").upsert({month:$("tgam").value,target:t,minimum:n,updated_at:new Date().toISOString(),updated_by:myName}).select();
+  if(r.error||!r.data||!r.data.length){toast("Couldn't save target");return}toast("Target saved");drawAch(true)};
 $("tgsum").addEventListener("click",function(e){var b=e.target.closest("button[data-w]");if(!b)return;tgWin=b.dataset.w;drawTarget(false)});
 $("tgcli").addEventListener("click",function(e){var b=e.target.closest("button[data-c]");if(!b)return;$("tgc").value=$("tgc").value===b.dataset.c?"":b.dataset.c;drawTarget(false)});
 ["tgm","tgc","tgq"].forEach(function(id){$(id).addEventListener("input",function(){drawTarget(false)})});
@@ -1247,11 +1298,14 @@ async function drawTrips(force){
   var mv=$("tpm").value,ms={};all.forEach(function(x){if(x.start)ms[x.start.slice(0,7)]=1});
   $("tpm").innerHTML=opt("","Any month")+Object.keys(ms).sort().reverse().map(function(m){return opt(m,"Started "+mName(m,1),m===mv)}).join("");
   var q=$("tpq").value.trim(),c=$("tpc").value,s=$("tps").value,m=$("tpm").value;
-  var list=all.filter(function(x){return x.no!==1&&(!c||x.client===c||x.info.go_client===c||x.info.ret_client===c)&&(!s||(s==="closed"?x.closed:!x.closed))&&(!m||(x.start||"").slice(0,7)===m)&&tpMatch(x,q)})
-    .sort(function(a,b){return (a.closed-b.closed)||(b.no-a.no)});
-  tpList=list;
-  var open=list.filter(function(x){return !x.closed&&x.n}),sum=[[open.length,"Ongoing trips"],[list.filter(function(x){return x.closed}).length,"Finished trips"],[open.reduce(function(a,x){return a+x.active},0),"Trucks on the road"],[open.filter(function(x){return x.late}).length,"Trips with delays"]];
-  if(canWrite)sum.push([money(open.reduce(function(a,x){return a+(x.val||0)},0)),"Value of ongoing trips"]);
+  var pre=all.filter(function(x){return x.no!==1&&(!c||x.client===c||x.info.go_client===c||x.info.ret_client===c)&&(!m||(x.start||"").slice(0,7)===m)&&tpMatch(x,q)});
+  $("tpn_open").textContent=pre.filter(function(x){return !x.closed}).length;$("tpn_closed").textContent=pre.filter(function(x){return x.closed}).length;
+  var list=pre.filter(function(x){return s==="closed"?x.closed:!x.closed}).sort(function(a,b){return b.no-a.no});
+  tpList=list;var sum;
+  if(s==="closed"){sum=[[list.length,"Finished trips"],[list.reduce(function(a,x){return a+x.n},0),"Trucks in these trips"]];
+    if(canWrite)sum.push([money(list.reduce(function(a,x){return a+(x.val||0)},0)),"Value of finished trips"])}
+  else{var open=list.filter(function(x){return x.n});sum=[[open.length,"Trips in progress"],[open.reduce(function(a,x){return a+x.active},0),"Trucks on the road"],[open.filter(function(x){return x.late}).length,"Trips with delays"]];
+    if(canWrite)sum.push([money(open.reduce(function(a,x){return a+(x.val||0)},0)),"Value of trips in progress"])}
   $("tpsum").innerHTML=sum.map(function(v){return '<button type="button" tabindex="-1" class="'+(v[0]?"":"zero")+'"><b>'+v[0]+'</b><span>'+esc(v[1])+'</span></button>'}).join("");
   $("tpcnt").textContent=list.length+" trip(s)";
   $("tpgrid").innerHTML=list.length?list.map(function(x){var i=x.info,w=function(n){return x.n?(n/x.n*100).toFixed(1)+"%":"0"};
@@ -1287,7 +1341,9 @@ function drawTrip(){
 $("tpgrid").addEventListener("click",function(e){var b=e.target.closest(".tpc");if(b)tpOpen(b.dataset.n)});
 $("tpback").onclick=function(){tpClose();drawTrips(false)};
 $("tpbody").addEventListener("click",function(e){var r=e.target.closest("tr.row");if(r&&trucks.some(function(t){return t.plate===r.dataset.p}))openEdit(r.dataset.p)});
-["tpq","tpc","tps","tpm"].forEach(function(id){$(id).addEventListener("input",function(){drawTrips(false)})});
+["tpq","tpc","tpm"].forEach(function(id){$(id).addEventListener("input",function(){drawTrips(false)})});
+$("tpseg").addEventListener("click",function(e){var b=e.target.closest("button[data-s]");if(!b)return;$("tps").value=b.dataset.s;
+  [].forEach.call(this.querySelectorAll("button"),function(x){var on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",on)});drawTrips(false)});
 $("tpxl").onclick=function(){if(!tpList.length){toast("Nothing to download");return}
   var h=["Trip","Status","Going client","Going job","Going from","Going to","Return client","Return job","Return from","Return to","Trucks","Done","Moved out","Started","Finished","Days","Avg days per truck","Slowest truck days"];
   if(canWrite)h=h.concat(["Going $/t","Going t/truck","Return $/t","Return t/truck","Going value","Return value","Trip value"]);
@@ -1637,7 +1693,7 @@ async function drawBill(){
   $("bcard").innerHTML='<div class="lab">'+esc(BS.label)+'</div><div class="amt">'+esc(bAmt())+(BS.vat_included?'<small>VAT inclusive</small>':'')+'</div>'+
     (due?'<div class="kv"><span>Month</span><span>'+esc(bMonth(due))+'</span></div><div class="kv"><span>Due</span><span>'+fmtD(BS.due_date)+'</span></div><div class="kv"><span>Pay by</span><span>'+fmtD(BS.lock_date)+'</span></div>'+
       (BS.can_pay?'<button class="btn" id="bpay" type="button">Pay '+esc(bAmt())+' with Pesapal</button>':'<div class="kv"><span>Status</span><span><span class="tag req">Waiting for finance to pay</span></span></div>')
-     :'<div class="kv"><span>Status</span><span><span class="tag paid">All paid</span></span></div><div class="kv"><span>Next payment</span><span>1st of next month</span></div>');
+     :'<div class="kv"><span>Status</span><span><span class="tag paid">All paid</span></span></div><div class="kv"><span>Next payment</span><span>'+(BS.next_due?fmtD(BS.next_due):"20th of next month")+'</span></div>');
   var paid=BP.filter(function(p){return p.status==="paid"}),other=BP.filter(function(p){return p.status!=="paid"}).slice(0,10);
   $("bbody").innerHTML=paid.concat(other).map(function(p){var s=BSTAT[p.status]||[p.status,""];return '<tr><td>'+esc(bMonth(p.period))+'</td><td class="xamt"><b>'+Number(p.amount).toLocaleString("en-US",{minimumFractionDigits:2})+'</b> '+esc(p.currency)+'</td><td><span class="tag '+s[1]+'">'+s[0]+'</span></td><td>'+esc(p.method||"–")+'</td><td>'+esc(p.confirmation_code||"–")+'</td><td>'+(p.paid_at?fmtD(dkey(p.paid_at)):"–")+'</td></tr>'}).join("")||'<tr><td colspan="6" class="rnote">No payments yet.</td></tr>';
   if($("bpay"))$("bpay").onclick=bPay;
