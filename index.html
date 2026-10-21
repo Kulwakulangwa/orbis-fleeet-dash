@@ -282,6 +282,12 @@ body.menu-open .mm{opacity:1;visibility:visible;transform:none;transition:opacit
 .rsum button[aria-pressed="true"]{border-color:var(--fg)}
 .rsum button.zero{opacity:.45}
 .rnote{font-size:13px;color:var(--mute)}
+.rtop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.pchk{display:grid;grid-template-columns:1fr 1fr;gap:8px;grid-column:1/3}
+.pchk label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--fg);padding:8px 10px;border:1px solid var(--card-line);border-radius:12px;cursor:pointer}
+.pchk input{width:18px;height:18px}
+.tag.amber{background:rgba(255,159,10,.25)}
+.perr{color:var(--err);font-size:13px;margin-top:8px}
 .tbl td.wrap{white-space:normal;min-width:180px;max-width:340px;font-size:13px}
 .rhead{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
 .rhead b{font-size:22px;letter-spacing:-.02em}
@@ -479,10 +485,10 @@ tr.moved td{opacity:.55}
 
 <main class="page" id="reports" hidden>
   <h2>Reports</h2>
-  <div class="rtabs" role="tablist">
+  <div class="rtop"><div class="rtabs" role="tablist">
     <button type="button" role="tab" id="rt_day" aria-selected="true">Status on a date</button>
     <button type="button" role="tab" id="rt_one" aria-selected="false">One truck's history</button>
-  </div>
+  </div><button class="btn sm" id="rpod" type="button">POD tracking</button></div>
   <section id="rday">
     <div class="bar2">
       <input id="rdate" type="date" aria-label="Date">
@@ -507,6 +513,21 @@ tr.moved td{opacity:.55}
     <div class="rhead" id="hhead" style="margin-top:12px"></div>
     <div class="tbl" style="margin-top:12px"><table><thead><tr><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Location</th><th>Trip</th><th>Driver</th><th>Notes</th><th>Updated by</th></tr></thead><tbody id="hbody"></tbody></table></div>
   </section>
+</main>
+
+<main class="page" id="pod" hidden>
+  <div class="rtop"><h2>POD tracking</h2><button class="btn sm ghost" id="pback" type="button">&larr; Reports</button></div>
+  <p class="lead tlead">Every offload creates a POD here automatically. Due in 6 days from offloading. Days 7 to 12 are an exception (amber), day 13 and later is a major exception (red) and payment may be held. A POD can only be marked Sent when all six documents are ticked.</p>
+  <div class="rsum" id="psum"></div>
+  <div class="bar2" style="margin-top:12px">
+    <input id="pq" type="search" placeholder="Search plate, DL, job, place…" aria-label="Search PODs">
+    <select id="pcl" aria-label="Client"></select>
+    <select id="pst" aria-label="Status"><option value="open">All open</option><option value="waiting">Waiting for driver</option><option value="received">Received at HQ</option><option value="sent">Sent to client</option><option value="rejected">Rejected</option><option value="accepted">Accepted</option><option value="">All</option></select>
+    <button class="btn sm" id="padd" type="button" hidden>Add POD</button>
+    <button class="btn sm ghost" id="pxl" type="button">Download Excel</button>
+    <span class="cnt" id="pcnt"></span>
+  </div>
+  <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Truck</th><th>Client</th><th>DL number</th><th>Job</th><th>Delivery point</th><th>Offloaded</th><th>Days</th><th>Status</th><th>Documents</th><th>Remark</th></tr></thead><tbody id="pbody"></tbody></table></div>
 </main>
 
 <main class="page" id="target" hidden>
@@ -666,6 +687,33 @@ tr.moved td{opacity:.55}
   </form>
 </div>
 
+<div class="sheet" id="psheet" hidden role="dialog" aria-modal="true" aria-labelledby="ptl">
+  <form class="sheet-in" id="pform" novalidate>
+    <h3 id="ptl">POD</h3>
+    <div class="sub2" id="psub"></div>
+    <div class="fgrid">
+      <label class="fld" id="pplatebox">Truck plate<input id="p_plate" placeholder="T123ABC"></label>
+      <label class="fld">Client<select id="p_client"></select></label>
+      <label class="fld">DL number<input id="p_dl" placeholder="DL-1234567"></label>
+      <label class="fld">Job file<input id="p_job" placeholder="JOB123456"></label>
+      <label class="fld">Delivery point<input id="p_dp"></label>
+      <label class="fld">Offload date<input id="p_od" type="date"></label>
+      <label class="fld w">Status<select id="p_st"><option value="waiting">Waiting for driver / yard</option><option value="received">Received at HQ</option><option value="sent">Sent to client</option><option value="rejected">Rejected by client</option><option value="accepted">Accepted by client</option></select></label>
+      <label class="fld w" id="prrbox" hidden>Rejection reason<select id="p_rr"><option value="">Choose reason</option><option>Weighbridge slip not clear</option><option>Weighbridge slip missing</option><option>Weighbridge slip cropped, not readable</option><option>Road manifest missing</option><option>Packing list missing</option><option>Invoice not readable</option><option>Delivery note missing</option><option>Customs document missing</option><option>Wrong trip documents</option><option>Other (write in notes)</option></select></label>
+      <div class="pchk" role="group" aria-label="Documents checked">
+        <label><input type="checkbox" id="c_rm">Road manifest</label>
+        <label><input type="checkbox" id="c_pl">Packing list</label>
+        <label><input type="checkbox" id="c_ci">Commercial invoice</label>
+        <label><input type="checkbox" id="c_customs">Customs document</label>
+        <label><input type="checkbox" id="c_dn">Delivery note</label>
+        <label><input type="checkbox" id="c_wbs">Weighbridge slip (clear)</label>
+      </div>
+      <label class="fld w">Notes<textarea id="p_notes"></textarea></label>
+    </div>
+    <p class="perr" id="perr"></p>
+    <div class="acts"><button class="btn ghost" id="pcancel" type="button">Close</button><button class="btn" id="psave" type="submit">Save</button></div>
+  </form>
+</div>
 <div class="sheet" id="tsheet" hidden role="dialog" aria-modal="true" aria-labelledby="tstitle">
   <form class="sheet-in tsin" id="tsform">
     <h3 id="tstitle">New trip</h3>
@@ -1720,13 +1768,80 @@ async function bReturn(){
 $("billgo").onclick=function(){show("bill")};
 $("pout").onclick=function(){$("paused").hidden=true;$("mout").onclick()};
 
+
+/* ----- POD tracking ----- */
+var PODS=[],pEdit=null,PST={waiting:"Waiting for driver",received:"Received at HQ",sent:"Sent to client",rejected:"Rejected",accepted:"Accepted"};
+var PCK=["rm","pl","ci","customs","dn","wbs"],PCKL={rm:"Road manifest",pl:"Packing list",ci:"Invoice",customs:"Customs",dn:"Delivery note",wbs:"Weighbridge slip"};
+function pDays(r){var a=new Date(r.offload_date+"T00:00:00"),b=new Date((r.closed_at||todayKey())+"T00:00:00");return Math.max(0,Math.round((b-a)/864e5))}
+function pBand(d){return d>=13?"late":d>=7?"amber":"ok"}
+function pDone(r){return PCK.filter(function(k){return r["chk_"+k]}).length}
+function pMiss(r){return PCK.filter(function(k){return !r["chk_"+k]}).map(function(k){return PCKL[k]})}
+async function pLoad(){var r=await sb.from("pods").select("*").order("offload_date",{ascending:true});if(r.error){toast("Couldn't load PODs");return}PODS=r.data||[];pDraw()}
+function pFilt(){var q=$("pq").value.trim().toLowerCase(),c=$("pcl").value,st=$("pst").value;
+  return PODS.filter(function(r){if(c&&(r.client||"Others")!==c)return false;if(st==="open"){if(r.status==="accepted")return false}else if(st&&r.status!==st)return false;
+    if(q&&[r.plate,r.dl_no,r.job_no,r.delivery_point,r.notes,r.reject_reason].join(" ").toLowerCase().indexOf(q)<0)return false;return true})
+  .sort(function(a,b){return pDays(b)-pDays(a)})}
+function pDraw(){
+  if(!$("pcl").options.length)$("pcl").innerHTML='<option value="">All clients</option>'+CLIENTS.map(function(c){return opt(c,c,false)}).join("");
+  var open=PODS.filter(function(r){return r.status!=="accepted"}),n=function(f){return open.filter(f).length};
+  var cards=[["waiting","Waiting for driver",n(function(r){return r.status==="waiting"})],["received","Received at HQ",n(function(r){return r.status==="received"})],["sent","Sent, waiting answer",n(function(r){return r.status==="sent"})],["rejected","Rejected, resend",n(function(r){return r.status==="rejected"})],["late","Over 12 days (not sent)",n(function(r){return r.status!=="sent"&&pDays(r)>=13})]];
+  $("psum").innerHTML=cards.map(function(c){return '<button type="button" data-k="'+c[0]+'" aria-pressed="'+($("pst").value===c[0])+'"'+(c[2]?"":' class="zero"')+'><b>'+c[2]+'</b><span>'+c[1]+'</span></button>'}).join("");
+  $("psum").querySelectorAll("button").forEach(function(b){b.onclick=function(){$("pst").value=b.dataset.k==="late"?"open":b.dataset.k;pDraw()}});
+  var L=pFilt();$("pcnt").textContent=L.length+" POD"+(L.length===1?"":"s");$("padd").hidden=!canWrite;
+  $("pbody").innerHTML=L.length?L.map(function(r){var d=pDays(r),dn=pDone(r);
+    var st='<span class="tag'+(r.status==="rejected"?" late":r.status==="accepted"?" ok":"")+'">'+esc(PST[r.status]||r.status)+'</span>';
+    var dd=r.status==="accepted"?'<span class="tag ok">done</span>':'<span class="tag '+pBand(d)+'">'+d+' d</span>';
+    var rem=r.status==="rejected"?(r.reject_reason||""):r.status==="sent"&&r.sent_at?"sent "+fmtD(r.sent_at):(r.notes||"");
+    return '<tr class="row" data-id="'+r.id+'"><td><b>'+esc(r.plate)+'</b></td><td>'+esc(r.client||"")+'</td><td>'+esc(r.dl_no||"")+'</td><td>'+esc(r.job_no||"")+'</td><td>'+esc(r.delivery_point||"")+'</td><td>'+fmtD(r.offload_date)+'</td><td>'+dd+'</td><td>'+st+'</td><td>'+(dn===6?'<span class="tag ok">6/6</span>':'<span class="tag">'+dn+'/6</span>')+'</td><td>'+esc(rem)+'</td></tr>'}).join(""):'<tr><td colspan="10" class="rnote">No PODs here</td></tr>';
+  $("pbody").querySelectorAll("tr.row").forEach(function(tr){tr.onclick=function(){pOpen(PODS.find(function(r){return String(r.id)===tr.dataset.id}))}});
+}
+function pOpen(r){pEdit=r||null;var x=r||{status:"waiting",offload_date:todayKey(),client:"Reload"};
+  $("ptl").textContent=r?r.plate:"New POD";$("psub").textContent=r?(PST[r.status]+" · offloaded "+fmtD(r.offload_date)+" · "+pDays(r)+" days"):"Add a POD that was not created by an offload";
+  $("pplatebox").hidden=!!r;$("p_plate").value=x.plate||"";
+  $("p_client").innerHTML=CLIENTS.map(function(c){return opt(c,c,c===(x.client||"Reload"))}).join("");
+  $("p_dl").value=x.dl_no||"";$("p_job").value=x.job_no||"";$("p_dp").value=x.delivery_point||"";$("p_od").value=x.offload_date||"";
+  $("p_st").value=x.status;$("p_rr").value=x.reject_reason||"";$("prrbox").hidden=x.status!=="rejected";
+  PCK.forEach(function(k){$("c_"+k).checked=!!x["chk_"+k]});$("p_notes").value=x.notes||"";$("perr").textContent="";
+  $("pform").querySelectorAll("input,select,textarea").forEach(function(el){el.disabled=!canWrite});$("psave").hidden=!canWrite;
+  $("psheet").hidden=false}
+function pClose(){$("psheet").hidden=true;pEdit=null}
+$("p_st").onchange=function(){$("prrbox").hidden=this.value!=="rejected";$("perr").textContent=""};
+$("pcancel").onclick=pClose;$("psheet").onclick=function(e){if(e.target===this)pClose()};
+$("pform").onsubmit=async function(e){e.preventDefault();if(!canWrite)return;
+  var st=$("p_st").value,ck={};PCK.forEach(function(k){ck["chk_"+k]=$("c_"+k).checked});
+  var all=PCK.every(function(k){return ck["chk_"+k]});
+  if((st==="sent"||st==="accepted")&&!all){$("perr").textContent="Tick all six documents before marking it "+(st==="sent"?"Sent":"Accepted")+". Missing: "+PCK.filter(function(k){return !ck["chk_"+k]}).map(function(k){return PCKL[k]}).join(", ");return}
+  if(st==="rejected"&&!$("p_rr").value){$("perr").textContent="Choose the rejection reason";return}
+  var plate=pEdit?pEdit.plate:$("p_plate").value.trim().toUpperCase().replace(/\s+/g,"");
+  if(!plate){$("perr").textContent="Type the truck plate";return}if(!$("p_od").value){$("perr").textContent="Choose the offload date";return}
+  var dl=$("p_dl").value.trim().toUpperCase();
+  if(dl&&PODS.some(function(r){return r.dl_no===dl&&(!pEdit||r.id!==pEdit.id)})){$("perr").textContent="This DL number is already on another POD ("+PODS.find(function(r){return r.dl_no===dl}).plate+"). Check it is the right trip.";return}
+  var old=pEdit||{},today=todayKey();
+  var row=Object.assign({plate:plate,client:$("p_client").value,dl_no:dl||null,job_no:$("p_job").value.trim().toUpperCase()||null,delivery_point:$("p_dp").value.trim()||null,offload_date:$("p_od").value,status:st,
+    reject_reason:st==="rejected"?$("p_rr").value:null,notes:$("p_notes").value.trim()||null,updated_at:new Date().toISOString(),updated_by:myName},ck);
+  if(st!=="waiting"&&!old.received_at)row.received_at=today;
+  if(st==="sent"&&old.status!=="sent")row.sent_at=today;
+  if(st==="accepted"&&!old.closed_at)row.closed_at=today;if(st!=="accepted")row.closed_at=null;
+  if(st==="received"&&old.status==="rejected")row.reject_reason=null;
+  $("psave").disabled=true;
+  var r=pEdit?await sb.from("pods").update(row).eq("id",pEdit.id):await sb.from("pods").insert(row);
+  $("psave").disabled=false;
+  if(r.error){$("perr").textContent=/duplicate/i.test(r.error.message)?"A POD for this truck and offload date already exists":"Couldn't save. Try again";return}
+  toast("POD saved");pClose();pLoad()};
+$("padd").onclick=function(){pOpen(null)};
+["pq","pcl","pst"].forEach(function(id){$(id).addEventListener(id==="pq"?"input":"change",pDraw)});
+$("rpod").onclick=function(){show("pod")};$("pback").onclick=function(){show("reports")};
+$("pxl").onclick=function(){var L=pFilt();if(!L.length){toast("Nothing to download");return}
+  var rows=[["Truck","Client","DL number","Job","Delivery point","Offloaded","Days","Status","Received","Sent","Accepted","Documents","Missing","Rejection reason","Notes"]].concat(L.map(function(r){return [r.plate,r.client||"",r.dl_no||"",r.job_no||"",r.delivery_point||"",fmtD(r.offload_date),pDays(r),PST[r.status]||r.status,fmtD(r.received_at),fmtD(r.sent_at),fmtD(r.closed_at),pDone(r)+"/6",pMiss(r).join(", "),r.reject_reason||"",r.notes||""]}));
+  saveSheet("Orbis POD tracking "+fmtD(todayKey()).replace(/\//g,"-"),"PODs",rows)};
+
 /* ----- menu + views ----- */
 function setM(o){document.body.classList.toggle("menu-open",o);$("mbtn").setAttribute("aria-expanded",o)}
 $("mbtn").onclick=function(){setM(!document.body.classList.contains("menu-open"))};
 $("shade").onclick=function(){setM(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")setM(false)});
 document.querySelectorAll(".mm button[data-view]").forEach(function(b){b.onclick=function(){show(b.dataset.view);setM(false)}});
-var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",tzx:"Tunduma expenses",bill:"Monthly service",trucks:"All trucks",users:"Users"};
+var TITLES={dash:"Fleet status",detail:"Truck details",reports:"Reports",target:"Target",trips:"Trips",tzx:"Tunduma expenses",bill:"Monthly service",trucks:"All trucks",users:"Users",pod:"POD tracking"};
 function show(v){
   if(typeof closePop==="function"&&!$("pop").hidden)closePop();
   if((v==="trucks"||v==="users")&&!canWrite)v="detail";
@@ -1734,22 +1849,22 @@ function show(v){
   if(v==="bill"&&!(BS&&(BS.can_pay||BS.is_admin)))v="dash";
   if(finRole==="runner")v="tzx";
   if(typeof xCloseLine==="function"){if(!$("xlsheet").hidden)xCloseLine();if(!$("xsheet").hidden)xCloseVisit()}
-  ["dash","detail","reports","target","trips","tzx","trucks","users","bill"].forEach(function(x){$(x).hidden=x!==v});
+  ["dash","detail","reports","target","trips","tzx","trucks","users","bill","pod"].forEach(function(x){$(x).hidden=x!==v});
   document.body.classList.toggle("view-dash",v==="dash");$("vtitle").textContent=TITLES[v];
   document.querySelectorAll(".mm button[data-view]").forEach(function(b){if(b.dataset.view===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   try{history.replaceState(null,"","#"+v)}catch(e){}
-  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();if(v==="tzx")xLoad(false);if(v==="bill")drawBill();
+  if(v==="detail")drawDetail();if(v==="reports"){fillRepFilters();if($("rday").hidden)drawHist();else drawDay()}if(v==="target")drawTarget(true);if(v==="trips"){tpClose();drawTrips(true)}if(v==="trucks")drawTrucks();if(v==="users")loadUsers();if(v==="tzx")xLoad(false);if(v==="bill")drawBill();if(v==="pod")pLoad();
   window.scrollTo(0,0);
 }
 document.body.classList.add("view-dash");
 
 /* ----- live data ----- */
-function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","tzx","trucks","users","bill"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
+function gate(on){$("login").hidden=!on;if(on){if(!$("pop").hidden)closePop();["dash","detail","reports","target","trips","tzx","trucks","users","bill","pod"].forEach(function(x){$(x).hidden=true});$("mbtn").hidden=true;setM(false)}}
 async function pull(){
   var r=finRole==="runner"?await sb.rpc("fin_trucks"):await sb.from("trucks").select("*");
   if(r.error){$("state").classList.add("off");$("stxt").textContent="Reconnect";return false}
   if(!r.data.length&&!canWrite){$("state").classList.add("off");$("stxt").textContent="No access";return false}
-  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("trips").hidden)drawTrips(false);if(!$("tzx").hidden)xLoad(false);if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
+  $("state").classList.remove("off");$("stxt").textContent="Live";trucks=r.data;fillFilters();rebuild();if(!$("target").hidden)drawTarget(false);if(!$("trips").hidden)drawTrips(false);if(!$("tzx").hidden)xLoad(false);if(!$("pod").hidden)pLoad();if(!$("reports").hidden){fillRepFilters();LOGS=null;if($("rday").hidden)drawHist();else drawDay()}return true;
 }
 async function start(session){
   me=session.user;myName=me.email;canWrite=false;
